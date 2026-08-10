@@ -1,5 +1,6 @@
 import { requireProfile } from "@/lib/auth";
 import { NavBar } from "@/components/layout/NavBar";
+import { TenantNavBar } from "@/components/layout/TenantNavBar";
 import { PushToggle } from "@/components/settings/PushToggle";
 
 export default async function SettingsPage() {
@@ -8,21 +9,18 @@ export default async function SettingsPage() {
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <NavBar
-        role={role}
-        links={
-          role === "landlord"
-            ? [
-                { href: "/dashboard", label: "Properties" },
-                { href: "/requests", label: "Requests" },
-                { href: "/settings", label: "Settings" },
-              ]
-            : [
-                { href: "/home", label: "Home" },
-                { href: "/settings", label: "Settings" },
-              ]
-        }
-      />
+      {role === "landlord" ? (
+        <NavBar
+          role="landlord"
+          links={[
+            { href: "/dashboard", label: "Properties" },
+            { href: "/requests", label: "Requests" },
+            { href: "/settings", label: "Settings" },
+          ]}
+        />
+      ) : (
+        <TenantNavBar />
+      )}
       <main className="flex-1 px-6 py-8">
         <div className="mx-auto max-w-2xl">
           <h1 className="text-2xl font-medium">Settings</h1>

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
-import { NavBar } from "@/components/layout/NavBar";
+import { TenantNavBar } from "@/components/layout/TenantNavBar";
 
 export default async function TenantLayout({ children }: { children: React.ReactNode }) {
   const { profile } = await requireProfile();
@@ -8,13 +8,7 @@ export default async function TenantLayout({ children }: { children: React.React
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <NavBar
-        role="tenant"
-        links={[
-          { href: "/home", label: "Home" },
-          { href: "/settings", label: "Settings" },
-        ]}
-      />
+      <TenantNavBar />
       <main className="flex-1 px-6 py-8">{children}</main>
     </div>
   );
