@@ -46,9 +46,9 @@ export default async function TenantHomePage() {
               key={c.value}
               href={unitIds.length > 0 ? `/my-requests/new?category=${c.value}` : "#"}
               aria-disabled={unitIds.length === 0}
-              className={`flex flex-col items-center justify-center gap-2 rounded-xl border border-black/10 px-2 py-5 text-center text-xs dark:border-white/10 ${
+              className={`flex flex-col items-center justify-center gap-2 rounded-xl border border-black/10 px-2 py-5 text-center text-xs shadow-[5px_5px_12px_-3px_rgba(0,0,0,0.18)] transition-shadow dark:border-white/10 dark:shadow-[5px_5px_12px_-3px_rgba(0,0,0,0.55)] ${
                 unitIds.length > 0
-                  ? "hover:bg-black/[.02] dark:hover:bg-white/[.03]"
+                  ? "hover:bg-black/[.02] hover:shadow-[7px_7px_16px_-3px_rgba(0,0,0,0.24)] dark:hover:bg-white/[.03] dark:hover:shadow-[7px_7px_16px_-3px_rgba(0,0,0,0.65)]"
                   : "pointer-events-none opacity-40"
               }`}
             >
