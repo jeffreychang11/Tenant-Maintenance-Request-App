@@ -616,6 +616,14 @@ export type Database = {
           unit_label: string
         }[]
       }
+      get_landlord_contact: {
+        Args: { p_unit_id: string }
+        Returns: {
+          email: string
+          full_name: string
+          phone: string
+        }[]
+      }
       is_landlord_of_property: {
         Args: { p_property_id: string }
         Returns: boolean

@@ -1,4 +1,6 @@
 import { requireProfile } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { getPrimaryLandlordContact } from "@/lib/landlord";
 import { NavBar } from "@/components/layout/NavBar";
 import { TenantNavBar } from "@/components/layout/TenantNavBar";
 import { PushToggle } from "@/components/settings/PushToggle";
@@ -6,6 +8,8 @@ import { PushToggle } from "@/components/settings/PushToggle";
 export default async function SettingsPage() {
   const { user, profile } = await requireProfile();
   const role = profile.role as "landlord" | "tenant";
+  const supabase = await createClient();
+  const landlordContact = role === "tenant" ? await getPrimaryLandlordContact(supabase, user.id) : null;
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
@@ -19,7 +23,7 @@ export default async function SettingsPage() {
           ]}
         />
       ) : (
-        <TenantNavBar />
+        <TenantNavBar landlordContact={landlordContact} />
       )}
       <main className="flex-1 px-6 py-8">
         <div className="mx-auto max-w-2xl">
