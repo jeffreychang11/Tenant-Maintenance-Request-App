@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { IconMenu2, IconX, IconMail, IconPhone, IconChevronDown } from "@tabler/icons-react";
+import { IconMenu2, IconX } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
 
 type LandlordContact = {
@@ -14,7 +14,6 @@ type LandlordContact = {
 
 export function TenantNavBar({ landlordContact }: { landlordContact?: LandlordContact | null }) {
   const [open, setOpen] = useState(false);
-  const [contactOpen, setContactOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -65,50 +64,15 @@ export function TenantNavBar({ landlordContact }: { landlordContact?: LandlordCo
           >
             Requests
           </Link>
-
           {landlordContact && (
-            <div>
-              <button
-                onClick={() => setContactOpen((o) => !o)}
-                className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left hover:bg-black/5 dark:hover:bg-white/10"
-              >
-                Contact landlord
-                <IconChevronDown
-                  size={16}
-                  className={`text-zinc-500 transition-transform ${contactOpen ? "rotate-180" : ""}`}
-                />
-              </button>
-              {contactOpen && (
-                <div className="ml-3 flex flex-col gap-1 border-l border-black/10 py-1 pl-3 text-xs text-zinc-600 dark:border-white/10 dark:text-zinc-400">
-                  {landlordContact.full_name && (
-                    <p className="text-zinc-800 dark:text-zinc-200">{landlordContact.full_name}</p>
-                  )}
-                  {landlordContact.email && (
-                    <a
-                      href={`mailto:${landlordContact.email}`}
-                      className="flex items-center gap-1.5 hover:underline"
-                    >
-                      <IconMail size={14} aria-hidden="true" />
-                      <span className="truncate">{landlordContact.email}</span>
-                    </a>
-                  )}
-                  {landlordContact.phone && (
-                    <a
-                      href={`tel:${landlordContact.phone}`}
-                      className="flex items-center gap-1.5 hover:underline"
-                    >
-                      <IconPhone size={14} aria-hidden="true" />
-                      {landlordContact.phone}
-                    </a>
-                  )}
-                  {!landlordContact.email && !landlordContact.phone && (
-                    <p>No contact info on file.</p>
-                  )}
-                </div>
-              )}
-            </div>
+            <Link
+              href="/contact-landlord"
+              onClick={() => setOpen(false)}
+              className="rounded-md px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              Contact Landlord
+            </Link>
           )}
-
           <Link
             href="/settings"
             onClick={() => setOpen(false)}
