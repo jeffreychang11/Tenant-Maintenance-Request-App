@@ -604,6 +604,7 @@ export type Database = {
         }
         Returns: string
       }
+      delete_property: { Args: { p_property_id: string }; Returns: undefined }
       get_invite_by_token: {
         Args: { p_token: string }
         Returns: {
@@ -635,6 +636,10 @@ export type Database = {
       is_landlord_of_unit: { Args: { p_unit_id: string }; Returns: boolean }
       is_tenant_of_request: { Args: { p_request_id: string }; Returns: boolean }
       is_tenant_of_unit: { Args: { p_unit_id: string }; Returns: boolean }
+      remove_tenant_from_unit: {
+        Args: { p_tenant_unit_id: string }
+        Returns: undefined
+      }
       update_request_status: {
         Args: { p_new_status: string; p_note?: string; p_request_id: string }
         Returns: undefined

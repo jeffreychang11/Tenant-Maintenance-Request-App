@@ -1,7 +1,7 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getPrimaryLandlordContact } from "@/lib/landlord";
-import { NavBar } from "@/components/layout/NavBar";
+import { LandlordNavBar } from "@/components/layout/LandlordNavBar";
 import { TenantNavBar } from "@/components/layout/TenantNavBar";
 import { PushToggle } from "@/components/settings/PushToggle";
 
@@ -14,14 +14,7 @@ export default async function SettingsPage() {
   return (
     <div className="flex min-h-full flex-1 flex-col">
       {role === "landlord" ? (
-        <NavBar
-          role="landlord"
-          links={[
-            { href: "/dashboard", label: "Properties" },
-            { href: "/requests", label: "Requests" },
-            { href: "/settings", label: "Settings" },
-          ]}
-        />
+        <LandlordNavBar />
       ) : (
         <TenantNavBar landlordContact={landlordContact} />
       )}

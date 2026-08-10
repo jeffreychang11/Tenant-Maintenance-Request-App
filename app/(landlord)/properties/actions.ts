@@ -122,3 +122,33 @@ export async function revokeInvite(propertyId: string, unitId: string, inviteId:
 
   revalidatePath(`/properties/${propertyId}/units/${unitId}`);
 }
+
+export async function deleteProperty(propertyId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { error } = await supabase.rpc("delete_property", { p_property_id: propertyId });
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/manage-properties");
+  revalidatePath("/dashboard");
+}
+
+export async function removeTenant(tenantUnitId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const { error } = await supabase.rpc("remove_tenant_from_unit", {
+    p_tenant_unit_id: tenantUnitId,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/manage-properties");
+  revalidatePath("/dashboard");
+}
