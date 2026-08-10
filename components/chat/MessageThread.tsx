@@ -1,0 +1,126 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { triggerNotificationProcessing } from "@/lib/notifications/trigger";
+
+type Message = {
+  id: string;
+  sender_id: string;
+  body: string | null;
+  created_at: string;
+  senderName: string | null;
+};
+
+export function MessageThread({
+  requestId,
+  currentUserId,
+  initialMessages,
+}: {
+  requestId: string;
+  currentUserId: string;
+  initialMessages: Message[];
+}) {
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [body, setBody] = useState("");
+  const [sending, setSending] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`request:${requestId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "request_messages",
+          filter: `request_id=eq.${requestId}`,
+        },
+        (payload) => {
+          const row = payload.new as {
+            id: string;
+            sender_id: string;
+            body: string | null;
+            created_at: string;
+          };
+          setMessages((prev) =>
+            prev.some((m) => m.id === row.id) ? prev : [...prev, { ...row, senderName: null }]
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [requestId]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length]);
+
+  async function handleSend(e: React.FormEvent) {
+    e.preventDefault();
+    if (!body.trim()) return;
+    setSending(true);
+    const supabase = createClient();
+    const { error } = await supabase.from("request_messages").insert({
+      request_id: requestId,
+      sender_id: currentUserId,
+      body: body.trim(),
+    });
+    if (!error) {
+      setBody("");
+      triggerNotificationProcessing();
+    }
+    setSending(false);
+  }
+
+  return (
+    <div className="mt-6">
+      <h2 className="text-lg font-medium">Messages</h2>
+      <div className="mt-3 flex max-h-96 flex-col gap-2 overflow-y-auto rounded-xl border border-black/10 p-3 dark:border-white/10">
+        {messages.length === 0 && (
+          <p className="text-sm text-zinc-500">No messages yet.</p>
+        )}
+        {messages.map((m) => {
+          const isMe = m.sender_id === currentUserId;
+          return (
+            <div key={m.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+              <span className="mb-0.5 text-xs text-zinc-500">
+                {isMe ? "You" : m.senderName || "Them"}
+              </span>
+              <div
+                className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${
+                  isMe
+                    ? "bg-black text-white dark:bg-white dark:text-black"
+                    : "bg-black/5 dark:bg-white/10"
+                }`}
+              >
+                {m.body}
+              </div>
+            </div>
+          );
+        })}
+        <div ref={bottomRef} />
+      </div>
+      <form onSubmit={handleSend} className="mt-3 flex gap-2">
+        <input
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder="Write a reply..."
+          className="flex-1 rounded-md border border-black/10 px-3 py-2 text-sm dark:border-white/20 dark:bg-black"
+        />
+        <button
+          type="submit"
+          disabled={sending}
+          className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+        >
+          Send
+        </button>
+      </form>
+    </div>
+  );
+}
