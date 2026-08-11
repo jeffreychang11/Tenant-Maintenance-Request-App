@@ -96,10 +96,19 @@ export default async function LandlordDashboardPage() {
               ? CATEGORIES.find((c) => c.value === relevantRequest.category)?.icon
               : undefined;
 
+            // Left status bar: red = needs tending to, yellow = in
+            // progress, green = done / nothing outstanding.
+            const barColor =
+              badgeStatus === "open"
+                ? "border-l-red-500"
+                : badgeStatus === "in_progress"
+                  ? "border-l-amber-500"
+                  : "border-l-green-500";
+
             return (
               <li
                 key={p.id}
-                className="rounded-xl border border-black/10 shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:border-white/10 dark:shadow-[0_2px_8px_rgba(0,0,0,0.4)]"
+                className={`rounded-xl border border-l-4 border-black/10 ${barColor} shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:border-white/10 dark:shadow-[0_2px_8px_rgba(0,0,0,0.4)]`}
               >
                 <details>
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
