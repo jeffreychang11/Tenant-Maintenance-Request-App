@@ -30,12 +30,12 @@ export default async function LandlordRequestDetailPage({
         createdAt={result.request.created_at}
         attachments={result.attachments}
       />
-      <LandlordStatusControls requestId={requestId} status={result.request.status} />
       <MessageThread
         requestId={requestId}
         currentUserId={user.id}
         initialMessages={result.messages}
       />
+      <LandlordStatusControls requestId={requestId} status={result.request.status} />
       <StatusTimeline history={result.history} />
     </div>
   );
