@@ -111,9 +111,9 @@ export default async function LandlordDashboardPage() {
                     </div>
                     <div className="flex shrink-0 items-center gap-3">
                       {CategoryIcon && relevantRequest && (
-                        <span title={categoryLabel(relevantRequest.category)}>
-                          <CategoryIcon size={20} className="text-zinc-500" aria-hidden="true" />
-                          <span className="sr-only">{categoryLabel(relevantRequest.category)}</span>
+                        <span className="flex items-center gap-1.5 text-sm text-zinc-500 dark:text-zinc-400">
+                          <CategoryIcon size={18} aria-hidden="true" />
+                          {categoryLabel(relevantRequest.category)}
                         </span>
                       )}
                       {badgeStatus && <StatusBadge status={badgeStatus} />}
