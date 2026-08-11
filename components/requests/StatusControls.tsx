@@ -54,6 +54,12 @@ export function LandlordStatusControls({
     setLoading(false);
   }
 
+  const buttonColor: Record<string, string> = {
+    in_progress:
+      "border-amber-400 text-amber-700 hover:bg-amber-50 dark:border-amber-600 dark:text-amber-400 dark:hover:bg-amber-950",
+    done: "border-green-400 text-green-700 hover:bg-green-50 dark:border-green-600 dark:text-green-400 dark:hover:bg-green-950",
+  };
+
   return (
     <div className="mt-4 flex flex-wrap items-center gap-2">
       {options.map((o) => (
@@ -61,7 +67,9 @@ export function LandlordStatusControls({
           key={o.to}
           disabled={loading}
           onClick={() => handleTransition(o.to)}
-          className="rounded-full border border-black/10 px-3 py-1.5 text-xs font-medium disabled:opacity-50 dark:border-white/20"
+          className={`rounded-full border px-3 py-1.5 text-xs font-medium disabled:opacity-50 ${
+            buttonColor[o.to] ?? "border-black/10 dark:border-white/20"
+          }`}
         >
           {o.label}
         </button>

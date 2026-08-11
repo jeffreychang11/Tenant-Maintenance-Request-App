@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { loadRequestDetail } from "@/lib/requests";
 import { RequestDetail } from "@/components/requests/RequestDetail";
 import { MessageThread } from "@/components/chat/MessageThread";
-import { StatusTimeline } from "@/components/requests/StatusTimeline";
 import { LandlordStatusControls } from "@/components/requests/StatusControls";
 import { MarkAsRead } from "@/components/requests/MarkAsRead";
 
@@ -36,7 +35,6 @@ export default async function LandlordRequestDetailPage({
         initialMessages={result.messages}
       />
       <LandlordStatusControls requestId={requestId} status={result.request.status} />
-      <StatusTimeline history={result.history} />
     </div>
   );
 }
