@@ -2,9 +2,8 @@ import Link from "next/link";
 import { IconPlus } from "@tabler/icons-react";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { StatusBadge } from "@/components/requests/StatusBadge";
-import { CATEGORIES, categoryLabel } from "@/lib/categories";
 import { formatRelativeTime } from "@/lib/formatRelativeTime";
+import { PropertyTile } from "@/components/properties/PropertyTile";
 
 type RequestRow = {
   id: string;
@@ -92,74 +91,26 @@ export default async function LandlordDashboardPage() {
                     : r.status === "in_progress"
                 )
               : undefined;
-            const CategoryIcon = relevantRequest
-              ? CATEGORIES.find((c) => c.value === relevantRequest.category)?.icon
-              : undefined;
-
-            // Left status bar: red = needs tending to, yellow = in
-            // progress, green = done / nothing outstanding.
-            const barColor =
-              badgeStatus === "open"
-                ? "border-l-red-500"
-                : badgeStatus === "in_progress"
-                  ? "border-l-amber-500"
-                  : "border-l-green-500";
 
             return (
-              <li
+              <PropertyTile
                 key={p.id}
-                className={`rounded-xl border border-l-4 border-black/10 ${barColor} shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:border-white/10 dark:shadow-[0_2px_8px_rgba(0,0,0,0.4)]`}
-              >
-                <details>
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{tenantName || "No tenant"}</p>
-                      <p className="truncate text-sm text-zinc-600 dark:text-zinc-400">
-                        {[p.name, p.city, p.state].filter(Boolean).join(", ")}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-3">
-                      {CategoryIcon && relevantRequest && (
-                        <span className="flex items-center gap-1.5 text-sm text-zinc-500 dark:text-zinc-400">
-                          <CategoryIcon size={18} aria-hidden="true" />
-                          {categoryLabel(relevantRequest.category)}
-                        </span>
-                      )}
-                      {badgeStatus && <StatusBadge status={badgeStatus} />}
-                    </div>
-                  </summary>
-
-                  <div className="border-t border-black/10 px-4 py-3 dark:border-white/10">
-                    {newest ? (
-                      <div className="flex flex-col gap-1">
-                        <p className="text-sm font-medium">{newest.title}</p>
-                        <p className="text-xs text-zinc-500">
-                          {categoryLabel(newest.category)} · {formatRelativeTime(newest.created_at)}
-                        </p>
-                        {newest.description && (
-                          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                            {newest.description}
-                          </p>
-                        )}
-                        <Link
-                          href={`/requests/${newest.id}`}
-                          className="mt-2 self-start rounded-full border border-black/10 px-3 py-1.5 text-xs font-medium dark:border-white/20"
-                        >
-                          View request
-                        </Link>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-zinc-500">No requests yet.</p>
-                    )}
-                    <Link
-                      href={`/properties/${p.id}`}
-                      className="mt-3 block text-xs text-zinc-500 hover:underline"
-                    >
-                      Manage property →
-                    </Link>
-                  </div>
-                </details>
-              </li>
+                tenantName={tenantName ?? null}
+                addressLine={[p.name, p.city, p.state].filter(Boolean).join(", ")}
+                badgeStatus={badgeStatus}
+                categoryValue={relevantRequest?.category ?? null}
+                newest={
+                  newest
+                    ? {
+                        id: newest.id,
+                        title: newest.title,
+                        category: newest.category,
+                        description: newest.description,
+                        timeLabel: formatRelativeTime(newest.created_at),
+                      }
+                    : null
+                }
+              />
             );
           })}
         </ul>
