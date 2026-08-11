@@ -3,7 +3,7 @@ import { IconPlus } from "@tabler/icons-react";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { StatusBadge } from "@/components/requests/StatusBadge";
-import { categoryLabel } from "@/lib/categories";
+import { CATEGORIES, categoryLabel } from "@/lib/categories";
 import { formatRelativeTime } from "@/lib/formatRelativeTime";
 
 type RequestRow = {
@@ -82,6 +82,20 @@ export default async function LandlordDashboardPage() {
 
             const newest = propertyRequests[0];
 
+            // The specific request driving the status badge, so the
+            // category icon shown matches what the badge is about (not
+            // just whatever request happens to be most recent overall).
+            const relevantRequest = badgeStatus
+              ? propertyRequests.find((r) =>
+                  badgeStatus === "open"
+                    ? r.status === "open" || r.status === "reopened"
+                    : r.status === "in_progress"
+                )
+              : undefined;
+            const CategoryIcon = relevantRequest
+              ? CATEGORIES.find((c) => c.value === relevantRequest.category)?.icon
+              : undefined;
+
             return (
               <li
                 key={p.id}
@@ -95,7 +109,15 @@ export default async function LandlordDashboardPage() {
                         {[p.name, p.city, p.state].filter(Boolean).join(", ")}
                       </p>
                     </div>
-                    {badgeStatus && <StatusBadge status={badgeStatus} />}
+                    <div className="flex shrink-0 items-center gap-3">
+                      {CategoryIcon && relevantRequest && (
+                        <span title={categoryLabel(relevantRequest.category)}>
+                          <CategoryIcon size={20} className="text-zinc-500" aria-hidden="true" />
+                          <span className="sr-only">{categoryLabel(relevantRequest.category)}</span>
+                        </span>
+                      )}
+                      {badgeStatus && <StatusBadge status={badgeStatus} />}
+                    </div>
                   </summary>
 
                   <div className="border-t border-black/10 px-4 py-3 dark:border-white/10">
