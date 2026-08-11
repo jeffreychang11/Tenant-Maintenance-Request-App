@@ -83,7 +83,10 @@ export default async function LandlordDashboardPage() {
             const newest = propertyRequests[0];
 
             return (
-              <li key={p.id} className="rounded-xl border border-black/10 dark:border-white/10">
+              <li
+                key={p.id}
+                className="rounded-xl border border-black/10 shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:border-white/10 dark:shadow-[0_2px_8px_rgba(0,0,0,0.4)]"
+              >
                 <details>
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
                     <div className="min-w-0">
