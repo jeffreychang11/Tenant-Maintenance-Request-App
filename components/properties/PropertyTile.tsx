@@ -85,7 +85,7 @@ export function PropertyTile({
                   href={`/requests/${newest.id}`}
                   className="mt-2 self-start rounded-full border border-black/10 px-3 py-1.5 text-xs font-medium dark:border-white/20"
                 >
-                  View request
+                  Details
                 </Link>
               </div>
             ) : (
