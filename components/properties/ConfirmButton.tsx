@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export function ConfirmButton({
   action,
@@ -14,12 +15,14 @@ export function ConfirmButton({
   className?: string;
 }) {
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   async function handleClick() {
     if (!window.confirm(confirmMessage)) return;
     setLoading(true);
     try {
       await action();
+      router.refresh();
     } finally {
       setLoading(false);
     }

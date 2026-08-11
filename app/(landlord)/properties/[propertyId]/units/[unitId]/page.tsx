@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { createInvite, revokeInvite } from "@/app/(landlord)/properties/actions";
+import { createInvite, revokeInvite, removeTenant } from "@/app/(landlord)/properties/actions";
+import { ConfirmButton } from "@/components/properties/ConfirmButton";
 
 export default async function UnitDetailPage({
   params,
@@ -61,10 +62,17 @@ export default async function UnitDetailPage({
           {tenantLinks.map((t) => (
             <li
               key={t.id}
-              className="rounded-xl border border-black/10 px-4 py-3 text-sm dark:border-white/10"
+              className="flex items-center justify-between gap-3 rounded-xl border border-black/10 px-4 py-3 text-sm dark:border-white/10"
             >
               {(t.profiles as unknown as { full_name: string | null } | null)?.full_name ||
                 "Unnamed tenant"}
+              <ConfirmButton
+                action={removeTenant.bind(null, t.id)}
+                confirmMessage="Mark this tenant as moved out? They'll lose access to this unit, and you'll be able to invite a new tenant."
+                className="shrink-0 text-xs text-red-600 hover:underline"
+              >
+                Remove tenant
+              </ConfirmButton>
             </li>
           ))}
         </ul>

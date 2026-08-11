@@ -1,7 +1,8 @@
 import Link from "next/link";
+import { IconPlus, IconMinus } from "@tabler/icons-react";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { createUnit, deleteProperty, removeTenant } from "@/app/(landlord)/properties/actions";
+import { createUnit, deleteProperty } from "@/app/(landlord)/properties/actions";
 import { ConfirmButton } from "@/components/properties/ConfirmButton";
 
 export default async function ManagePropertiesPage() {
@@ -22,9 +23,10 @@ export default async function ManagePropertiesPage() {
         <h1 className="text-2xl font-medium">Manage properties</h1>
         <Link
           href="/properties/new"
-          className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+          aria-label="Add property"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
         >
-          Add property
+          <IconPlus size={18} aria-hidden="true" />
         </Link>
       </div>
 
@@ -58,9 +60,10 @@ export default async function ManagePropertiesPage() {
                   <ConfirmButton
                     action={deleteProperty.bind(null, p.id)}
                     confirmMessage={`Delete "${p.name}"? This permanently removes its units, tenant links, and all maintenance request history. This can't be undone.`}
-                    className="shrink-0 rounded-full border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-950 dark:text-red-400 dark:hover:bg-red-900"
                   >
-                    Delete property
+                    <IconMinus size={16} aria-hidden="true" />
+                    <span className="sr-only">Delete property</span>
                   </ConfirmButton>
                 </div>
 
@@ -80,30 +83,12 @@ export default async function ManagePropertiesPage() {
                               : "No tenant"}
                           </p>
                         </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          {activeTenant ? (
-                            <ConfirmButton
-                              action={removeTenant.bind(null, activeTenant.id)}
-                              confirmMessage="Mark this tenant as moved out? They'll lose access to this unit, and you'll be able to invite a new tenant."
-                              className="text-xs text-red-600 hover:underline"
-                            >
-                              Remove tenant
-                            </ConfirmButton>
-                          ) : (
-                            <Link
-                              href={`/properties/${p.id}/units/${u.id}`}
-                              className="text-xs text-zinc-600 hover:underline dark:text-zinc-400"
-                            >
-                              Invite tenant
-                            </Link>
-                          )}
-                          <Link
-                            href={`/properties/${p.id}/units/${u.id}`}
-                            className="text-xs text-zinc-600 hover:underline dark:text-zinc-400"
-                          >
-                            Manage →
-                          </Link>
-                        </div>
+                        <Link
+                          href={`/properties/${p.id}/units/${u.id}`}
+                          className="shrink-0 text-xs text-zinc-600 hover:underline dark:text-zinc-400"
+                        >
+                          Manage →
+                        </Link>
                       </div>
                     );
                   })}
