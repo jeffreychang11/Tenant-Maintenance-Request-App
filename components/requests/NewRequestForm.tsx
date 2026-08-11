@@ -61,7 +61,7 @@ export function NewRequestForm({
       data: { user },
     } = await supabase.auth.getUser();
 
-    const { data: requestId, error: rpcError } = await supabase.rpc(
+    const { data: rpcData, error: rpcError } = await supabase.rpc(
       "create_maintenance_request",
       {
         p_unit_id: unitId,
@@ -71,11 +71,15 @@ export function NewRequestForm({
       }
     );
 
-    if (rpcError || !requestId || !user) {
+    const created = rpcData?.[0];
+
+    if (rpcError || !created || !user) {
       setError(rpcError?.message ?? "Something went wrong creating the request.");
       setStatus("idle");
       return;
     }
+
+    const { request_id: requestId, message_id: messageId } = created;
 
     for (const file of files) {
       const kind = classifyFile(file)!;
@@ -92,6 +96,7 @@ export function NewRequestForm({
 
       await supabase.from("request_attachments").insert({
         request_id: requestId,
+        message_id: messageId,
         uploader_id: user.id,
         storage_path: path,
         file_type: kind,

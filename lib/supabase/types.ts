@@ -602,7 +602,10 @@ export type Database = {
           p_title: string
           p_unit_id: string
         }
-        Returns: string
+        Returns: {
+          message_id: string
+          request_id: string
+        }[]
       }
       delete_property: { Args: { p_property_id: string }; Returns: undefined }
       get_invite_by_token: {

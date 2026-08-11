@@ -3,7 +3,7 @@ import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { loadRequestDetail } from "@/lib/requests";
 import { RequestDetail } from "@/components/requests/RequestDetail";
-import { MessageThread } from "@/components/chat/MessageThread";
+import { RequestConversation } from "@/components/chat/RequestConversation";
 import { LandlordStatusControls } from "@/components/requests/StatusControls";
 import { MarkAsRead } from "@/components/requests/MarkAsRead";
 
@@ -27,9 +27,9 @@ export default async function LandlordRequestDetailPage({
         category={result.request.category}
         status={result.request.status}
         createdAt={result.request.created_at}
-        attachments={result.attachments}
+        attachments={[]}
       />
-      <MessageThread
+      <RequestConversation
         requestId={requestId}
         currentUserId={user.id}
         initialMessages={result.messages}

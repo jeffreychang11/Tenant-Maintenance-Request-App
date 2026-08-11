@@ -13,7 +13,7 @@ export async function loadRequestDetail(supabase: SupabaseClient<Database>, requ
   const [{ data: attachments }, { data: messages }, { data: history }] = await Promise.all([
     supabase
       .from("request_attachments")
-      .select("id, storage_path, file_type")
+      .select("id, storage_path, file_type, message_id")
       .eq("request_id", requestId),
     supabase
       .from("request_messages")
@@ -27,7 +27,12 @@ export async function loadRequestDetail(supabase: SupabaseClient<Database>, requ
       .order("created_at", { ascending: true }),
   ]);
 
-  let signedAttachments: { id: string; file_type: string; signedUrl: string | null }[] = [];
+  let signedAttachments: {
+    id: string;
+    file_type: string;
+    signedUrl: string | null;
+    message_id: string | null;
+  }[] = [];
   if (attachments && attachments.length > 0) {
     const { data: signed } = await supabase.storage
       .from("request-attachments")
@@ -39,6 +44,7 @@ export async function loadRequestDetail(supabase: SupabaseClient<Database>, requ
       id: a.id,
       file_type: a.file_type,
       signedUrl: signed?.[i]?.signedUrl ?? null,
+      message_id: a.message_id,
     }));
   }
 
@@ -48,6 +54,9 @@ export async function loadRequestDetail(supabase: SupabaseClient<Database>, requ
     body: m.body,
     created_at: m.created_at,
     senderName: (m.profiles as unknown as { full_name: string | null } | null)?.full_name ?? null,
+    attachments: signedAttachments
+      .filter((a) => a.message_id === m.id)
+      .map((a) => ({ id: a.id, file_type: a.file_type, signedUrl: a.signedUrl })),
   }));
 
   const statusHistory = (history ?? []).map((h) => ({
@@ -58,5 +67,10 @@ export async function loadRequestDetail(supabase: SupabaseClient<Database>, requ
     changedByName: (h.profiles as unknown as { full_name: string | null } | null)?.full_name ?? null,
   }));
 
-  return { request, attachments: signedAttachments, messages: chatMessages, history: statusHistory };
+  return {
+    request,
+    attachments: signedAttachments,
+    messages: chatMessages,
+    history: statusHistory,
+  };
 }
