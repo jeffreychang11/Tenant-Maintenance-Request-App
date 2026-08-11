@@ -21,25 +21,27 @@ export default async function SettingsPage() {
       <main className="flex-1 px-6 py-8">
         <div className="mx-auto max-w-2xl">
           <h1 className="text-2xl font-medium">Settings</h1>
-          <dl className="mt-6 space-y-3 text-sm">
-            <div className="flex justify-between border-b border-black/10 pb-3 dark:border-white/10">
+          <dl className="mt-6 flex flex-col gap-5 text-sm">
+            <div>
               <dt className="text-zinc-600 dark:text-zinc-400">Name</dt>
-              <dd>{profile.full_name || "—"}</dd>
+              <dd className="mt-1 font-bold text-black dark:text-white">
+                {profile.full_name || "—"}
+              </dd>
             </div>
-            <div className="flex justify-between border-b border-black/10 pb-3 dark:border-white/10">
+            <div>
               <dt className="text-zinc-600 dark:text-zinc-400">Email</dt>
-              <dd>{user.email}</dd>
+              <dd className="mt-1 font-bold text-black dark:text-white">{user.email}</dd>
             </div>
           </dl>
 
           <h2 className="mt-8 text-lg font-medium">Notifications</h2>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            Get a browser notification when there&apos;s activity on your requests. You&apos;ll
-            always get an email too, even without this enabled.
-          </p>
           <div className="mt-3">
             <PushToggle />
           </div>
+          <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+            Get a browser notification when there&apos;s activity on your requests. You&apos;ll
+            always get an email too, even without this enabled.
+          </p>
         </div>
       </main>
     </div>
