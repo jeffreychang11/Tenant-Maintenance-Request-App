@@ -15,14 +15,48 @@ the machine that built this, not in git):
 Next.js 16 (App Router, TypeScript, Tailwind) on Vercel + Supabase (Postgres,
 Auth, Storage, Realtime) + Resend (email) + Web Push (VAPID).
 
-## Status: Phases 1–5 complete, Phase 6 (polish/deploy) remaining
+## Status: Phases 1–5 complete + substantial UI/UX polish, Phase 6 (deploy) remaining
 
 1. ✅ Auth + core data model + RLS (profiles, properties, units, tenant_units, tenant_invites)
 2. ✅ Property/unit management + tenant invite flow (email + accept RPC)
 3. ✅ Maintenance requests + photo/video attachments (Storage) + both dashboards
 4. ✅ Realtime chat + status lifecycle RPC + history + reopen
 5. ✅ Notification outbox (push + email), triggered from DB events
-6. ⬜ Mobile responsive pass, empty/error states, rate limiting, production Resend domain, Vercel deploy
+6. 🔶 Partially done — see below. Still remaining: rate limiting, production
+   Resend domain verification, Vercel deploy.
+
+### UI/UX redesign pass (post-Phase-5, done in a later session)
+
+Both roles now use a hamburger menu (`components/layout/TenantNavBar.tsx`,
+`LandlordNavBar.tsx`) instead of inline nav links:
+- **Tenant**: Home, Requests (`/my-requests`, lists all their requests with a
+  "landlord responded" indicator), Contact Landlord (`/contact-landlord`,
+  via the `get_landlord_contact` RPC since email lives in `auth.users` not
+  `profiles`), Settings, Sign out.
+- **Landlord**: Home (`/dashboard`), Manage Properties (`/manage-properties`
+  — add/delete property, invite/remove tenants; delete uses `delete_property`
+  RPC which also cleans up Storage attachments since those aren't
+  FK-cascaded), Support (`/support`, static mailto to the developer),
+  Settings, Sign out.
+
+Landlord dashboard property tiles (`components/properties/PropertyTile.tsx`):
+animated slide-down expand (CSS grid-rows transition, not native
+`<details>`), a left status color bar (red/yellow/green) scoped to just the
+summary row via `overflow-hidden` on the outer tile, and a category
+icon+label matching whichever request is driving the status badge.
+
+Request detail page (landlord only, `app/(landlord)/requests/[requestId]`):
+now a **ticket-then-chat** conversation
+(`components/chat/RequestConversation.tsx`). Before the landlord's first
+reply it shows just the tenant's message + attachments (click a photo for a
+full-screen lightbox; video autoplays with controls) and a Reply button — no
+chat UI. Once the landlord replies, it becomes a live chat thread with the
+tenant's original message+attachments as the first bubble. This required
+`create_maintenance_request` to return the initial message's id (not just
+the request id) so attachments can be tagged with the correct `message_id` —
+see `20260811090612_create_request_returns_message_id.sql`. The status
+history timeline was removed from this page; Mark in progress / Mark done
+buttons are amber/green outlined and sit below the chat, not above it.
 
 ## Environment setup (`.env.local`, gitignored — not in this repo)
 
