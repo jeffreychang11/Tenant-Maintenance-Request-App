@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { IconPlus } from "@tabler/icons-react";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { StatusBadge } from "@/components/requests/StatusBadge";
@@ -44,9 +45,10 @@ export default async function LandlordDashboardPage() {
         <h1 className="text-2xl font-medium">Your properties</h1>
         <Link
           href="/properties/new"
-          className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+          aria-label="Add property"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
         >
-          Add property
+          <IconPlus size={18} aria-hidden="true" />
         </Link>
       </div>
 
