@@ -41,13 +41,13 @@ export function PropertyTile({
 
   return (
     <li
-      className={`rounded-xl border border-l-4 border-black/10 ${barColor} shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:border-white/10 dark:shadow-[0_2px_8px_rgba(0,0,0,0.4)]`}
+      className={`overflow-hidden rounded-xl border border-black/10 shadow-[0_2px_8px_rgba(0,0,0,0.08)] dark:border-white/10 dark:shadow-[0_2px_8px_rgba(0,0,0,0.4)]`}
     >
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left"
+        className={`flex w-full cursor-pointer items-center justify-between gap-3 border-l-4 px-4 py-3 text-left ${barColor}`}
       >
         <div className="min-w-0">
           <p className="truncate font-medium">{tenantName || "No tenant"}</p>
