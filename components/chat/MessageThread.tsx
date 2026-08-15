@@ -26,6 +26,9 @@ export function MessageThread({
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Subscribes regardless of whether a reply exists yet, so the chatbox can
+  // appear live the moment the landlord's first reply arrives, instead of
+  // needing a reload.
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
@@ -57,9 +60,14 @@ export function MessageThread({
     };
   }, [requestId]);
 
+  const firstMessage = messages[0];
+  const hasReply =
+    messages.length > 1 && messages.some((m) => m.sender_id !== firstMessage?.sender_id);
+  const replyMessages = messages.slice(1);
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
+    if (hasReply) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [replyMessages.length, hasReply]);
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -78,14 +86,16 @@ export function MessageThread({
     setSending(false);
   }
 
+  // No chatbox at all until the other side has actually replied — the
+  // tenant's own opening message already shows above (photo/video +
+  // description), so there's nothing to show here yet.
+  if (!hasReply) return null;
+
   return (
     <div className="mt-6">
       <h2 className="text-lg font-medium">Messages</h2>
       <div className="mt-3 flex max-h-96 flex-col gap-2 overflow-y-auto rounded-xl border border-black/10 p-3 dark:border-white/10">
-        {messages.length === 0 && (
-          <p className="text-sm text-zinc-500">No messages yet.</p>
-        )}
-        {messages.map((m) => {
+        {replyMessages.map((m) => {
           const isMe = m.sender_id === currentUserId;
           return (
             <div key={m.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>

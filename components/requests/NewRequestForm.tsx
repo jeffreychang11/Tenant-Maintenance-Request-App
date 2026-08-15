@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { IconPlus } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
-import { CATEGORIES, type CategoryValue } from "@/lib/categories";
+import type { CategoryValue } from "@/lib/categories";
 import { triggerNotificationProcessing } from "@/lib/notifications/trigger";
+import { compressImage } from "@/lib/media/compressImage";
+import { compressVideo } from "@/lib/media/compressVideo";
 
 const MAX_IMAGE_BYTES = 25 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
@@ -23,18 +26,18 @@ export function NewRequestForm({
   initialCategory?: string;
 }) {
   const router = useRouter();
-  const [unitId, setUnitId] = useState(units[0]?.id ?? "");
-  const [category, setCategory] = useState<CategoryValue>(
-    (initialCategory as CategoryValue) || "other"
-  );
+  const unitId = units[0]?.id ?? "";
+  const category: CategoryValue = (initialCategory as CategoryValue) || "other";
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [status, setStatus] = useState<"idle" | "submitting">("idle");
+  const [compressing, setCompressing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = Array.from(e.target.files ?? []);
+    const kinds: ("image" | "video")[] = [];
     for (const file of selected) {
       const kind = classifyFile(file);
       if (!kind) {
@@ -46,9 +49,20 @@ export function NewRequestForm({
         setError(`${file.name} is too large (max ${kind === "image" ? "25MB" : "100MB"}).`);
         return;
       }
+      kinds.push(kind);
     }
     setError(null);
-    setFiles(selected);
+
+    // Compress client-side (downscaled WebP/JPEG photos, trimmed-and-
+    // recompressed video) before it ever touches Supabase Storage, to
+    // keep storage costs down. Runs at selection time, not submit time,
+    // so a resubmit after fixing a validation error doesn't redo it.
+    setCompressing(true);
+    const compressed = await Promise.all(
+      selected.map((file, i) => (kinds[i] === "image" ? compressImage(file) : compressVideo(file)))
+    );
+    setCompressing(false);
+    setFiles(compressed);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -111,45 +125,7 @@ export function NewRequestForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-4">
-      {units.length > 1 && (
-        <div>
-          <label htmlFor="unit" className="block text-sm text-zinc-600 dark:text-zinc-400">
-            Unit
-          </label>
-          <select
-            id="unit"
-            value={unitId}
-            onChange={(e) => setUnitId(e.target.value)}
-            className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
-          >
-            {units.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      <div>
-        <label htmlFor="category" className="block text-sm text-zinc-600 dark:text-zinc-400">
-          Category
-        </label>
-        <select
-          id="category"
-          value={category}
-          onChange={(e) => setCategory(e.target.value as CategoryValue)}
-          className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
-        >
-          {CATEGORIES.map((c) => (
-            <option key={c.value} value={c.value}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
+    <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
       <div>
         <label htmlFor="title" className="block text-sm text-zinc-600 dark:text-zinc-400">
           Title
@@ -162,6 +138,34 @@ export function NewRequestForm({
           placeholder="Leaking kitchen faucet"
           className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
         />
+      </div>
+
+      <div>
+        <label htmlFor="files" className="block text-sm text-zinc-600 dark:text-zinc-400">
+          Photo or video (optional)
+        </label>
+        <label
+          htmlFor="files"
+          className="mt-1 flex aspect-square w-28 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-black/20 text-zinc-400 hover:bg-black/[.02] dark:border-white/20 dark:hover:bg-white/[.03]"
+        >
+          <IconPlus size={28} aria-hidden="true" />
+          <span className="sr-only">Add photo or video</span>
+        </label>
+        <input
+          id="files"
+          type="file"
+          multiple
+          accept="image/jpeg,image/png,image/webp,image/heic,video/mp4,video/quicktime,video/webm"
+          onChange={handleFileChange}
+          className="sr-only"
+        />
+        {compressing ? (
+          <p className="mt-2 text-xs text-zinc-500">Compressing...</p>
+        ) : (
+          files.length > 0 && (
+            <p className="mt-2 text-xs text-zinc-500">{files.length} file(s) selected</p>
+          )
+        )}
       </div>
 
       <div>
@@ -178,29 +182,12 @@ export function NewRequestForm({
         />
       </div>
 
-      <div>
-        <label htmlFor="files" className="block text-sm text-zinc-600 dark:text-zinc-400">
-          Photo or video (optional)
-        </label>
-        <input
-          id="files"
-          type="file"
-          multiple
-          accept="image/jpeg,image/png,image/webp,image/heic,video/mp4,video/quicktime,video/webm"
-          onChange={handleFileChange}
-          className="mt-1 w-full text-sm"
-        />
-        {files.length > 0 && (
-          <p className="mt-1 text-xs text-zinc-500">{files.length} file(s) selected</p>
-        )}
-      </div>
-
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <button
         type="submit"
-        disabled={status === "submitting" || !unitId}
-        className="mt-2 rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+        disabled={status === "submitting" || compressing || !unitId}
+        className="rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
       >
         {status === "submitting" ? "Submitting..." : "Submit request"}
       </button>

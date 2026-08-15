@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { IconPlayerPlay, IconX } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
 import { triggerNotificationProcessing } from "@/lib/notifications/trigger";
+import { formatMessageDivider, shouldShowDivider } from "@/lib/formatMessageDivider";
 
 type MessageAttachment = { id: string; file_type: string; signedUrl: string | null };
 
@@ -125,15 +126,12 @@ export function RequestConversation({
     );
   }
 
-  if (!hasReply) {
-    return (
-      <div className="mt-6">
-        <div className="flex flex-col gap-3 rounded-xl border border-black/10 p-4 dark:border-white/10">
-          {firstMessage?.body && <p className="text-sm">{firstMessage.body}</p>}
-          <AttachmentGrid attachments={firstMessage?.attachments ?? []} />
-        </div>
+  const replyMessages = messages.slice(1);
 
-        {replying ? (
+  return (
+    <div className="mt-6">
+      {!hasReply &&
+        (replying ? (
           <form onSubmit={handleSend} className="mt-3 flex gap-2">
             <input
               autoFocus
@@ -158,86 +156,65 @@ export function RequestConversation({
           >
             Reply
           </button>
-        )}
+        ))}
 
-        {lightbox && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-            onClick={() => setLightbox(null)}
-          >
-            {lightbox.type === "image" ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={lightbox.url} alt="Attachment" className="max-h-full max-w-full rounded-lg" />
-            ) : (
-              <video
-                src={lightbox.url}
-                controls
-                autoPlay
-                className="max-h-full max-w-full rounded-lg"
-                onClick={(e) => e.stopPropagation()}
-              />
-            )}
-            <button
-              type="button"
-              onClick={() => setLightbox(null)}
-              aria-label="Close"
-              className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
-            >
-              <IconX size={20} />
-            </button>
+      {hasReply && (
+        <>
+          <h2 className="mt-6 text-lg font-medium">Messages</h2>
+          <div className="mt-3 flex max-h-96 flex-col gap-3 overflow-y-auto rounded-xl border border-black/10 p-3 dark:border-white/10">
+            {replyMessages.map((m, i) => {
+              const isMe = m.sender_id === currentUserId;
+              const showDivider = shouldShowDivider(m, replyMessages[i - 1]);
+              return (
+                <div key={m.id} className="contents">
+                  {showDivider && (
+                    <div className="text-center text-xs text-zinc-400 dark:text-zinc-500">
+                      {formatMessageDivider(m.created_at)}
+                    </div>
+                  )}
+                  <div className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+                    <span className="mb-0.5 text-xs text-zinc-500">
+                      {isMe ? "You" : m.senderName || "Them"}
+                    </span>
+                    {m.body && (
+                      <div
+                        className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${
+                          isMe
+                            ? "bg-black text-white dark:bg-white dark:text-black"
+                            : "bg-black/5 dark:bg-white/10"
+                        }`}
+                      >
+                        {m.body}
+                      </div>
+                    )}
+                    {m.attachments.length > 0 && (
+                      <div className="mt-2 w-full max-w-[80%]">
+                        <AttachmentGrid attachments={m.attachments} />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+            <div ref={bottomRef} />
           </div>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-6">
-      <h2 className="text-lg font-medium">Messages</h2>
-      <div className="mt-3 flex max-h-96 flex-col gap-3 overflow-y-auto rounded-xl border border-black/10 p-3 dark:border-white/10">
-        {messages.map((m) => {
-          const isMe = m.sender_id === currentUserId;
-          return (
-            <div key={m.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-              <span className="mb-0.5 text-xs text-zinc-500">
-                {isMe ? "You" : m.senderName || "Them"}
-              </span>
-              {m.body && (
-                <div
-                  className={`max-w-[80%] rounded-xl px-3 py-2 text-sm ${
-                    isMe
-                      ? "bg-black text-white dark:bg-white dark:text-black"
-                      : "bg-black/5 dark:bg-white/10"
-                  }`}
-                >
-                  {m.body}
-                </div>
-              )}
-              {m.attachments.length > 0 && (
-                <div className="mt-2 w-full max-w-[80%]">
-                  <AttachmentGrid attachments={m.attachments} />
-                </div>
-              )}
-            </div>
-          );
-        })}
-        <div ref={bottomRef} />
-      </div>
-      <form onSubmit={handleSend} className="mt-3 flex gap-2">
-        <input
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder="Write a reply..."
-          className="flex-1 rounded-md border border-black/10 px-3 py-2 text-sm dark:border-white/20 dark:bg-black"
-        />
-        <button
-          type="submit"
-          disabled={sending}
-          className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
-        >
-          Send
-        </button>
-      </form>
+          <form onSubmit={handleSend} className="mt-3 flex gap-2">
+            <input
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="Write a reply..."
+              className="flex-1 rounded-md border border-black/10 px-3 py-2 text-sm dark:border-white/20 dark:bg-black"
+            />
+            <button
+              type="submit"
+              disabled={sending}
+              className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+            >
+              Send
+            </button>
+          </form>
+        </>
+      )}
 
       {lightbox && (
         <div

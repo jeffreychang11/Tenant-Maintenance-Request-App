@@ -3,9 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { BackButton } from "@/components/layout/BackButton";
 
 export default function SignupPage() {
   const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "sent">("idle");
@@ -20,8 +22,8 @@ export default function SignupPage() {
       email,
       password,
       options: {
-        data: { role: "landlord", full_name: fullName },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: { role: "landlord", full_name: fullName, phone },
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/billing?welcome=1")}`,
       },
     });
     if (error) {
@@ -34,6 +36,7 @@ export default function SignupPage() {
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-sm flex-1 flex-col justify-center px-6 py-16">
+      <BackButton />
       <h1 className="text-2xl font-medium">Create a landlord account</h1>
 
       {status === "sent" ? (
@@ -51,6 +54,20 @@ export default function SignupPage() {
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
+              className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="phone" className="block text-sm text-zinc-600 dark:text-zinc-400">
+              Phone number
+            </label>
+            <input
+              id="phone"
+              type="tel"
+              required
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
             />
           </div>
@@ -99,7 +116,7 @@ export default function SignupPage() {
 
       <p className="mt-8 text-sm text-zinc-600 dark:text-zinc-400">
         Already have an account?{" "}
-        <Link href="/login" className="font-medium text-black dark:text-white">
+        <Link href="/login?form=1" className="font-medium text-black dark:text-white">
           Log in
         </Link>
       </p>

@@ -8,7 +8,6 @@ import { createClient } from "@/lib/supabase/client";
 
 type LandlordContact = {
   full_name: string | null;
-  phone: string | null;
   email: string | null;
 };
 

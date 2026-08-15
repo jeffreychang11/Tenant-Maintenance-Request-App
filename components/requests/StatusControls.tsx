@@ -8,15 +8,12 @@ import { triggerNotificationProcessing } from "@/lib/notifications/trigger";
 const LANDLORD_TRANSITIONS: Record<string, { to: string; label: string }[]> = {
   open: [
     { to: "in_progress", label: "Mark in progress" },
-    { to: "done", label: "Mark done" },
+    { to: "done", label: "Mark complete" },
   ],
-  in_progress: [
-    { to: "open", label: "Move back to open" },
-    { to: "done", label: "Mark done" },
-  ],
+  in_progress: [{ to: "done", label: "Mark complete" }],
   reopened: [
     { to: "in_progress", label: "Mark in progress" },
-    { to: "done", label: "Mark done" },
+    { to: "done", label: "Mark complete" },
   ],
   done: [],
 };
@@ -45,6 +42,10 @@ export function LandlordStatusControls({
     setError(null);
     const { error } = await callUpdateStatus(requestId, to);
     if (error) {
+      if (error.message.includes("subscription_required")) {
+        router.push("/billing?locked=1");
+        return;
+      }
       setError(error.message);
       setLoading(false);
       return;
@@ -79,17 +80,19 @@ export function LandlordStatusControls({
   );
 }
 
-export function TenantReopenControl({ requestId, status }: { requestId: string; status: string }) {
+// In case the landlord fixed it in person and forgot to update the status,
+// the tenant can resolve it themselves — either outcome just marks it done.
+export function TenantStatusControls({ requestId, status }: { requestId: string; status: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (status !== "done") return null;
+  if (status === "done") return null;
 
-  async function handleReopen() {
+  async function handleResolve() {
     setLoading(true);
     setError(null);
-    const { error } = await callUpdateStatus(requestId, "reopened");
+    const { error } = await callUpdateStatus(requestId, "done");
     if (error) {
       setError(error.message);
       setLoading(false);
@@ -101,15 +104,22 @@ export function TenantReopenControl({ requestId, status }: { requestId: string; 
   }
 
   return (
-    <div className="mt-4">
+    <div className="mt-4 flex flex-wrap items-center gap-2">
       <button
         disabled={loading}
-        onClick={handleReopen}
+        onClick={handleResolve}
+        className="rounded-full border border-green-400 px-3 py-1.5 text-xs font-medium text-green-700 disabled:opacity-50 dark:border-green-600 dark:text-green-400 dark:hover:bg-green-950"
+      >
+        Mark complete
+      </button>
+      <button
+        disabled={loading}
+        onClick={handleResolve}
         className="rounded-full border border-black/10 px-3 py-1.5 text-xs font-medium disabled:opacity-50 dark:border-white/20"
       >
-        This isn&apos;t fixed — reopen
+        No longer needed
       </button>
-      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+      {error && <p className="w-full text-xs text-red-600">{error}</p>}
     </div>
   );
 }

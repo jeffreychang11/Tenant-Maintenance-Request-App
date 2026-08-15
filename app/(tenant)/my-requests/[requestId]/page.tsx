@@ -4,9 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { loadRequestDetail } from "@/lib/requests";
 import { RequestDetail } from "@/components/requests/RequestDetail";
 import { MessageThread } from "@/components/chat/MessageThread";
-import { StatusTimeline } from "@/components/requests/StatusTimeline";
-import { TenantReopenControl } from "@/components/requests/StatusControls";
+import { TenantStatusControls } from "@/components/requests/StatusControls";
 import { MarkAsRead } from "@/components/requests/MarkAsRead";
+import { BackButton } from "@/components/layout/BackButton";
 
 export default async function TenantRequestDetailPage({
   params,
@@ -23,20 +23,21 @@ export default async function TenantRequestDetailPage({
   return (
     <div className="mx-auto max-w-2xl">
       <MarkAsRead requestId={requestId} userId={user.id} />
+      <BackButton />
       <RequestDetail
         title={result.request.title}
         category={result.request.category}
         status={result.request.status}
         createdAt={result.request.created_at}
         attachments={result.attachments}
+        description={result.request.description}
       />
-      <TenantReopenControl requestId={requestId} status={result.request.status} />
       <MessageThread
         requestId={requestId}
         currentUserId={user.id}
         initialMessages={result.messages}
       />
-      <StatusTimeline history={result.history} />
+      <TenantStatusControls requestId={requestId} status={result.request.status} />
     </div>
   );
 }

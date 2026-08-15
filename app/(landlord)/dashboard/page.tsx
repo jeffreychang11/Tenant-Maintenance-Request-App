@@ -2,18 +2,7 @@ import Link from "next/link";
 import { IconPlus } from "@tabler/icons-react";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { formatRelativeTime } from "@/lib/formatRelativeTime";
-import { PropertyTile } from "@/components/properties/PropertyTile";
-
-type RequestRow = {
-  id: string;
-  unit_id: string;
-  title: string;
-  description: string | null;
-  category: string;
-  status: string;
-  created_at: string;
-};
+import { DashboardPropertyList } from "@/components/properties/DashboardPropertyList";
 
 export default async function LandlordDashboardPage() {
   const { user } = await requireProfile();
@@ -31,12 +20,15 @@ export default async function LandlordDashboardPage() {
     .eq("landlord_id", user.id)
     .order("created_at", { ascending: false });
 
-  const requestsByUnit = new Map<string, RequestRow[]>();
-  for (const r of requests ?? []) {
-    const list = requestsByUnit.get(r.unit_id) ?? [];
-    list.push(r);
-    requestsByUnit.set(r.unit_id, list);
-  }
+  // Drives the 24-hour "Complete" badge on the dashboard tile. Sourced from
+  // request_status_history (not maintenance_requests.updated_at, which also
+  // gets bumped by unrelated chat messages) so the window reflects when the
+  // request actually was marked done, not when it was last touched.
+  const { data: doneEvents } = await supabase
+    .from("request_status_history")
+    .select("request_id, created_at")
+    .eq("to_status", "done")
+    .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -56,64 +48,19 @@ export default async function LandlordDashboardPage() {
           No properties yet. Add your first one to start inviting tenants.
         </p>
       ) : (
-        <ul className="mt-6 flex flex-col gap-2">
-          {properties.map((p) => {
-            const units = (p.units ?? []) as unknown as {
+        <DashboardPropertyList
+          landlordId={user.id}
+          properties={properties.map((p) => ({
+            id: p.id,
+            addressLine: [p.name, p.city, p.state].filter(Boolean).join(", "),
+            units: (p.units ?? []) as unknown as {
               id: string;
-              label: string;
               tenant_units: { status: string; profiles: { full_name: string | null } | null }[];
-            }[];
-
-            const unitIds = units.map((u) => u.id);
-            const propertyRequests = unitIds
-              .flatMap((id) => requestsByUnit.get(id) ?? [])
-              .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
-
-            const hasOpen = propertyRequests.some(
-              (r) => r.status === "open" || r.status === "reopened"
-            );
-            const hasInProgress = propertyRequests.some((r) => r.status === "in_progress");
-            const badgeStatus = hasOpen ? "open" : hasInProgress ? "in_progress" : null;
-
-            const tenantName = units
-              .flatMap((u) => u.tenant_units)
-              .find((tu) => tu.status === "active")?.profiles?.full_name;
-
-            const newest = propertyRequests[0];
-
-            // The specific request driving the status badge, so the
-            // category icon shown matches what the badge is about (not
-            // just whatever request happens to be most recent overall).
-            const relevantRequest = badgeStatus
-              ? propertyRequests.find((r) =>
-                  badgeStatus === "open"
-                    ? r.status === "open" || r.status === "reopened"
-                    : r.status === "in_progress"
-                )
-              : undefined;
-
-            return (
-              <PropertyTile
-                key={p.id}
-                tenantName={tenantName ?? null}
-                addressLine={[p.name, p.city, p.state].filter(Boolean).join(", ")}
-                badgeStatus={badgeStatus}
-                categoryValue={relevantRequest?.category ?? null}
-                newest={
-                  newest
-                    ? {
-                        id: newest.id,
-                        title: newest.title,
-                        category: newest.category,
-                        description: newest.description,
-                        timeLabel: formatRelativeTime(newest.created_at),
-                      }
-                    : null
-                }
-              />
-            );
-          })}
-        </ul>
+            }[],
+          }))}
+          initialRequests={requests ?? []}
+          initialDoneEvents={doneEvents ?? []}
+        />
       )}
     </div>
   );

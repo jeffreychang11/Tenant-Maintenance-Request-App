@@ -454,6 +454,62 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          billing_interval: string | null
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string | null
+          id: string
+          landlord_id: string
+          status: string | null
+          stripe_customer_id: string | null
+          stripe_price_id: string | null
+          stripe_subscription_id: string | null
+          tier: string | null
+          trial_ends_at: string
+          updated_at: string
+        }
+        Insert: {
+          billing_interval?: string | null
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          landlord_id: string
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string | null
+          trial_ends_at: string
+          updated_at?: string
+        }
+        Update: {
+          billing_interval?: string | null
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          landlord_id?: string
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string | null
+          trial_ends_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_landlord_id_fkey"
+            columns: ["landlord_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_invites: {
         Row: {
           accepted_at: string | null
@@ -622,6 +678,13 @@ export type Database = {
       }
       get_landlord_contact: {
         Args: { p_unit_id: string }
+        Returns: {
+          email: string
+          full_name: string
+        }[]
+      }
+      get_tenant_contact: {
+        Args: { p_tenant_id: string }
         Returns: {
           email: string
           full_name: string

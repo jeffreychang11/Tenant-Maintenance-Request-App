@@ -21,16 +21,22 @@ export default async function SettingsPage() {
       <main className="flex-1 px-6 py-8">
         <div className="mx-auto max-w-2xl">
           <h1 className="text-2xl font-medium">Settings</h1>
-          <dl className="mt-6 flex flex-col gap-5 text-sm">
+          <dl className="mt-6 flex flex-col gap-5">
             <div>
-              <dt className="text-zinc-600 dark:text-zinc-400">Name</dt>
-              <dd className="mt-1 font-bold text-black dark:text-white">
+              <dt className="text-xs text-zinc-500 dark:text-zinc-400">Name</dt>
+              <dd className="mt-1 text-base font-medium text-black dark:text-white">
                 {profile.full_name || "—"}
               </dd>
             </div>
             <div>
-              <dt className="text-zinc-600 dark:text-zinc-400">Email</dt>
-              <dd className="mt-1 font-bold text-black dark:text-white">{user.email}</dd>
+              <dt className="text-xs text-zinc-500 dark:text-zinc-400">Email</dt>
+              <dd className="mt-1 text-base font-medium text-black dark:text-white">{user.email}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-zinc-500 dark:text-zinc-400">Phone</dt>
+              <dd className="mt-1 text-base font-medium text-black dark:text-white">
+                {profile.phone || "—"}
+              </dd>
             </div>
           </dl>
 

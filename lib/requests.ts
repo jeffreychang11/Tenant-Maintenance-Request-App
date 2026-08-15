@@ -10,7 +10,7 @@ export async function loadRequestDetail(supabase: SupabaseClient<Database>, requ
 
   if (!request) return null;
 
-  const [{ data: attachments }, { data: messages }, { data: history }] = await Promise.all([
+  const [{ data: attachments }, { data: messages }] = await Promise.all([
     supabase
       .from("request_attachments")
       .select("id, storage_path, file_type, message_id")
@@ -18,11 +18,6 @@ export async function loadRequestDetail(supabase: SupabaseClient<Database>, requ
     supabase
       .from("request_messages")
       .select("id, sender_id, body, created_at, profiles(full_name)")
-      .eq("request_id", requestId)
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("request_status_history")
-      .select("id, from_status, to_status, created_at, profiles(full_name)")
       .eq("request_id", requestId)
       .order("created_at", { ascending: true }),
   ]);
@@ -59,18 +54,9 @@ export async function loadRequestDetail(supabase: SupabaseClient<Database>, requ
       .map((a) => ({ id: a.id, file_type: a.file_type, signedUrl: a.signedUrl })),
   }));
 
-  const statusHistory = (history ?? []).map((h) => ({
-    id: h.id,
-    from_status: h.from_status,
-    to_status: h.to_status,
-    created_at: h.created_at,
-    changedByName: (h.profiles as unknown as { full_name: string | null } | null)?.full_name ?? null,
-  }));
-
   return {
     request,
     attachments: signedAttachments,
     messages: chatMessages,
-    history: statusHistory,
   };
 }

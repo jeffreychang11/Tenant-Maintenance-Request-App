@@ -3,7 +3,8 @@ import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createInvite, revokeInvite, removeTenant } from "@/app/(landlord)/properties/actions";
-import { ConfirmButton } from "@/components/properties/ConfirmButton";
+import { TenantRow } from "@/components/properties/TenantRow";
+import { BackButton } from "@/components/layout/BackButton";
 
 export default async function UnitDetailPage({
   params,
@@ -29,6 +30,16 @@ export default async function UnitDetailPage({
     .eq("unit_id", unitId)
     .eq("status", "active");
 
+  const tenantContacts = await Promise.all(
+    (tenantLinks ?? []).map(async (t) => {
+      const { data } = await supabase
+        .rpc("get_tenant_contact", { p_tenant_id: t.tenant_id })
+        .maybeSingle();
+      return { tenantUnitId: t.id, ...data };
+    })
+  );
+  const contactByTenantUnitId = new Map(tenantContacts.map((c) => [c.tenantUnitId, c]));
+
   const { data: invites } = await supabase
     .from("tenant_invites")
     .select("id, email, status, expires_at, created_at")
@@ -40,6 +51,7 @@ export default async function UnitDetailPage({
 
   return (
     <div className="mx-auto max-w-2xl">
+      <BackButton />
       <p className="text-sm text-zinc-500">
         <Link href="/dashboard" className="hover:underline">
           Properties
@@ -59,22 +71,22 @@ export default async function UnitDetailPage({
         </p>
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
-          {tenantLinks.map((t) => (
-            <li
-              key={t.id}
-              className="flex items-center justify-between gap-3 rounded-xl border border-black/10 px-4 py-3 text-sm dark:border-white/10"
-            >
-              {(t.profiles as unknown as { full_name: string | null } | null)?.full_name ||
-                "Unnamed tenant"}
-              <ConfirmButton
-                action={removeTenant.bind(null, t.id)}
-                confirmMessage="Mark this tenant as moved out? They'll lose access to this unit, and you'll be able to invite a new tenant."
-                className="shrink-0 text-xs text-red-600 hover:underline"
-              >
-                Remove tenant
-              </ConfirmButton>
-            </li>
-          ))}
+          {tenantLinks.map((t) => {
+            const contact = contactByTenantUnitId.get(t.id);
+            const fullName =
+              (t.profiles as unknown as { full_name: string | null } | null)?.full_name ||
+              contact?.full_name ||
+              "Unnamed tenant";
+            return (
+              <TenantRow
+                key={t.id}
+                fullName={fullName}
+                email={contact?.email ?? null}
+                phone={contact?.phone ?? null}
+                onRemove={removeTenant.bind(null, t.id)}
+              />
+            );
+          })}
         </ul>
       )}
 

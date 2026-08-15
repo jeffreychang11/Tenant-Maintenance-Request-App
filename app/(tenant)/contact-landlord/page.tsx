@@ -1,7 +1,7 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getPrimaryLandlordContact } from "@/lib/landlord";
-import { IconMail, IconPhone } from "@tabler/icons-react";
+import { IconMail } from "@tabler/icons-react";
 
 export default async function ContactLandlordPage() {
   const { user } = await requireProfile();
@@ -32,17 +32,7 @@ export default async function ContactLandlordPage() {
             </a>
           )}
 
-          {landlordContact.phone && (
-            <a
-              href={`tel:${landlordContact.phone}`}
-              className="flex items-center gap-3 rounded-xl border border-black/10 px-4 py-3 text-sm hover:bg-black/[.02] dark:border-white/10 dark:hover:bg-white/[.03]"
-            >
-              <IconPhone size={18} className="shrink-0 text-zinc-500" aria-hidden="true" />
-              {landlordContact.phone}
-            </a>
-          )}
-
-          {!landlordContact.email && !landlordContact.phone && (
+          {!landlordContact.email && (
             <p className="text-sm text-zinc-500">No contact info on file.</p>
           )}
         </div>

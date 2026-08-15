@@ -9,7 +9,7 @@ const LABELS: Record<string, string> = {
   open: "Maintenance required",
   reopened: "Reopened",
   in_progress: "In progress",
-  done: "Done",
+  done: "Complete",
 };
 
 export function StatusBadge({ status }: { status: string }) {

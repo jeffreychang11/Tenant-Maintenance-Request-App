@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export function InviteSignupForm({ email, token }: { email: string; token: string }) {
   const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +21,7 @@ export function InviteSignupForm({ email, token }: { email: string; token: strin
       email,
       password,
       options: {
-        data: { role: "tenant", full_name: fullName },
+        data: { role: "tenant", full_name: fullName, phone },
         emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
       },
     });
@@ -51,6 +52,20 @@ export function InviteSignupForm({ email, token }: { email: string; token: strin
           required
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
+          className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="phone" className="block text-sm text-zinc-600 dark:text-zinc-400">
+          Phone number
+        </label>
+        <input
+          id="phone"
+          type="tel"
+          required
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
           className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
         />
       </div>
@@ -96,7 +111,7 @@ export function InviteSignupForm({ email, token }: { email: string; token: strin
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
         Already have an account?{" "}
         <Link
-          href={`/login?next=${encodeURIComponent(`/invite/${token}`)}`}
+          href={`/login?form=1&next=${encodeURIComponent(`/invite/${token}`)}`}
           className="font-medium text-black dark:text-white"
         >
           Log in

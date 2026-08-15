@@ -9,14 +9,15 @@ export function PushToggle() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const isSupported = "serviceWorker" in navigator && "PushManager" in window;
-    setSupported(isSupported);
-    if (isSupported) {
-      navigator.serviceWorker.getRegistration("/sw.js").then(async (reg) => {
+    (async () => {
+      const isSupported = "serviceWorker" in navigator && "PushManager" in window;
+      setSupported(isSupported);
+      if (isSupported) {
+        const reg = await navigator.serviceWorker.getRegistration("/sw.js");
         const sub = await reg?.pushManager.getSubscription();
         setEnabled(!!sub);
-      });
-    }
+      }
+    })();
   }, []);
 
   if (!supported) {
@@ -43,7 +44,7 @@ export function PushToggle() {
     <button
       onClick={handleToggle}
       disabled={loading}
-      className="rounded-full border border-black/10 px-4 py-2 text-sm font-medium disabled:opacity-50 dark:border-white/20"
+      className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
     >
       {enabled ? "Disable push notifications" : "Enable push notifications"}
     </button>

@@ -1,6 +1,8 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { NewRequestForm } from "@/components/requests/NewRequestForm";
+import { BackButton } from "@/components/layout/BackButton";
+import { categoryLabel, type CategoryValue } from "@/lib/categories";
 
 export default async function NewRequestPage({
   searchParams,
@@ -20,6 +22,7 @@ export default async function NewRequestPage({
   if (!tenantUnits || tenantUnits.length === 0) {
     return (
       <div className="mx-auto max-w-md">
+        <BackButton />
         <h1 className="text-2xl font-medium">New request</h1>
         <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
           You&apos;re not linked to a unit yet. Ask your landlord to send you an invite.
@@ -36,9 +39,12 @@ export default async function NewRequestPage({
     };
   });
 
+  const resolvedCategory: CategoryValue = (category as CategoryValue) || "other";
+
   return (
     <div className="mx-auto max-w-md">
-      <h1 className="text-2xl font-medium">New request</h1>
+      <BackButton />
+      <h1 className="text-2xl font-medium">New request - {categoryLabel(resolvedCategory)}</h1>
       <NewRequestForm units={units} initialCategory={category} />
     </div>
   );
