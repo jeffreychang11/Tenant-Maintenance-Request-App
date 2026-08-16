@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { MessageUsage } from "@/lib/billing/messageLimit";
 
 // Green below 60% of the base cap, yellow 60-80%, red 80% and up
@@ -13,6 +13,40 @@ function barColorClass(percent: number): string {
 }
 
 const RUN_DURATION_MS = 1400;
+
+// Small stylized rooster, facing right (the direction the bar fills), in
+// brown — drawn as plain SVG shapes instead of the 🐓 emoji so the color
+// and facing direction are both under our control (emoji glyphs render
+// with fixed colors and orientation that vary by platform).
+function RoosterIcon({
+  className,
+  style,
+}: {
+  className?: string;
+  style?: CSSProperties;
+}) {
+  return (
+    <svg
+      viewBox="0 0 40 32"
+      width="28"
+      height="22"
+      className={className}
+      style={style}
+      aria-hidden="true"
+    >
+      <line x1="16" y1="24" x2="14" y2="30" stroke="#92400e" strokeWidth="2" strokeLinecap="round" />
+      <line x1="22" y1="24" x2="24" y2="30" stroke="#92400e" strokeWidth="2" strokeLinecap="round" />
+      <path d="M14 14 C4 8, 2 2, 8 4 C6 10, 10 14, 14 14 Z" fill="#5c3a21" />
+      <path d="M15 16 C6 14, 2 10, 6 8 C7 14, 12 17, 15 16 Z" fill="#7c4a22" />
+      <ellipse cx="19" cy="18" rx="11" ry="8" fill="#8b5a2b" />
+      <circle cx="29" cy="10" r="5.5" fill="#8b5a2b" />
+      <path d="M25 4 Q26 1 27 4 Q28 1 29 4 Q30 1 31 4 Q30 6 27 6 Q25 6 25 4 Z" fill="#dc2626" />
+      <path d="M31 12 Q33 13 31 16 Q29 14 31 12 Z" fill="#dc2626" />
+      <path d="M34 9 L39 10.5 L34 12 Z" fill="#f59e0b" />
+      <circle cx="30" cy="8.5" r="1" fill="#1c1917" />
+    </svg>
+  );
+}
 
 export function MessageUsageBar({ usage }: { usage: MessageUsage }) {
   const targetPercent =
@@ -70,20 +104,17 @@ export function MessageUsageBar({ usage }: { usage: MessageUsage }) {
         {usage.messagesUsed} of {usage.baseCap} messages used this month
         {usage.bundleCap > 0 && ` (+${usage.bundleCap} purchased)`}.
       </p>
-      <div className="relative mt-7 w-full">
-        <span
-          aria-hidden="true"
-          className={`absolute -top-6 inline-block text-xl ${running ? "animate-rooster-waddle" : ""}`}
-          style={{ left: `${percent}%`, transform: running ? undefined : "translateX(-50%)" }}
-        >
-          🐓
-        </span>
-        <div className="h-2.5 w-full overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+      <div className="relative mt-4 h-6 w-full">
+        <div className="absolute bottom-0 h-2.5 w-full overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
           <div
             className={`h-full rounded-full ${barColorClass(percent)}`}
             style={{ width: `${percent}%` }}
           />
         </div>
+        <RoosterIcon
+          className={`absolute bottom-1 ${running ? "animate-rooster-waddle" : ""}`}
+          style={{ left: `${percent}%`, transform: running ? undefined : "translateX(-50%)" }}
+        />
       </div>
       {usage.inBufferZone && !usage.blocked && (
         <p className="mt-2 text-sm text-amber-700 dark:text-amber-400">

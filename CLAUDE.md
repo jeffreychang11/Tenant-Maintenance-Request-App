@@ -1501,6 +1501,29 @@ separate `mailto:` link — was duplicating (with a slightly different
 subject line) what the Support page's mailto link already does. One
 fewer place hardcoding the developer's email address if it ever changes.
 
+**Subscribe buttons get the same pop animation as Manage
+Properties.** All four Subscribe buttons on `/billing` (monthly + yearly,
+both tiers) gained the same `hover:scale-110 hover:shadow-md
+active:scale-95` treatment as the Manage Properties pills, per explicit
+follow-up ask for consistency.
+
+**Rooster redrawn as a custom SVG, not the 🐓 emoji, and moved onto the
+bar itself.** `MessageUsageBar.tsx`'s `RoosterIcon` replaces the emoji
+with plain SVG shapes (ellipse body, circle head, two curved tail-feather
+paths, a scalloped comb, a wattle, a beak, two leg lines) — necessary
+because emoji glyphs have platform-fixed color and orientation that CSS
+can't reliably override, and the ask was specifically for a *particular*
+color (brown: `#8b5a2b` body/head) and a *particular* facing direction
+(right, matching the direction it runs — beak/comb sit at the high-x end
+of the `0 0 40 32` viewBox, tail trails at the low-x end). Positioning
+changed from an absolutely-positioned span floating `-top-6` above the
+bar to sitting `bottom-1` inside a wrapper the track itself is pinned to
+the bottom of (`absolute bottom-0`), so it visually stands/walks on the
+bar's surface instead of hovering separately above it — the waddle
+keyframes (`translateX(-50%) rotate(...)`) needed no changes since the
+positioning axis they operate on didn't change, only the vertical anchor
+did.
+
 ## Environment setup
 
 Copy `.env.local.example` and fill in:
