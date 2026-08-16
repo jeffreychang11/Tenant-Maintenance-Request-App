@@ -134,7 +134,7 @@ export function ManagePropertiesList({
                     </div>
                     <Link
                       href={`/properties/${p.id}/units/${u.id}`}
-                      className="shrink-0 rounded-full bg-black px-3 py-1.5 text-xs font-medium text-white dark:bg-white dark:text-black"
+                      className="shrink-0 scale-100 rounded-full bg-black px-3 py-1.5 text-xs font-medium text-white transition-transform hover:scale-110 hover:shadow-md active:scale-95 dark:bg-white dark:text-black"
                     >
                       {activeTenant ? "Manage →" : "Add tenant"}
                     </Link>

@@ -24,3 +24,17 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes rooster-waddle {
+  0%,
+  100% {
+    transform: translateX(-50%) rotate(-14deg);
+  }
+  50% {
+    transform: translateX(-50%) rotate(14deg);
+  }
+}
+
+.animate-rooster-waddle {
+  animation: rooster-waddle 0.28s ease-in-out infinite;
+}

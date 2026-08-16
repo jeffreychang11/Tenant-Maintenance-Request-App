@@ -1446,6 +1446,61 @@ vars as a masked `[SENSITIVE]` placeholder, which broke the build on
 (`LandlordNavBar.tsx`), between Manage Properties and Support — was
 previously last before the sign-out divider.
 
+**Manage Properties' "Manage →" / "Add tenant" pills lift and scale on
+hover/tap.** These are the one remaining plain solid-black pill on that
+page (Edit/Delete are already filled circles with their own hover tint) —
+rather than switching them to the dropdown's white+silver treatment,
+which would have stripped their current visual prominence as the primary
+per-unit action, added `hover:scale-110 hover:shadow-md active:scale-95`
+(+ `transition-transform`) in `ManagePropertiesList.tsx` so the color
+stays black but the button visibly lifts toward the cursor and presses
+down on tap — demoed to the user as an interactive widget mockup before
+building it. **Tailwind v4 gotcha hit verifying this**: `scale-*`
+utilities set the native CSS `scale` property, not `transform` — checking
+`getComputedStyle(el).transform` after a real hover looked like the class
+wasn't applying (`"none"`) until switching the check to `cs.scale`, which
+correctly showed `"1.1"`. Don't reach for `.transform` when verifying any
+Tailwind v4 `scale-*`/rotate/translate utility in this repo.
+
+**Billing plan-card checkmarks are green** (`app/(landlord)/billing/page.tsx`,
+the `IconCheck` in `planFeatures(tier).map(...)`) — was `text-zinc-400`,
+now `text-green-600 dark:text-green-500`. One line covers both the
+regular `/billing` view and the post-signup `?welcome=1` view, since
+they're the same page component — signup itself
+(`app/(auth)/signup/page.tsx`) redirects to `/billing?welcome=1` after
+email confirmation rather than rendering its own separate plan cards.
+
+**Rooster-run animation on the Settings page message meter**
+(`components/billing/MessageUsageBar.tsx`, now a client component). Every
+time the landlord lands on Settings, a 🐓 runs from the left edge of the
+bar to the current usage point, waddling (`animate-rooster-waddle`, a
+`rotate(-14deg)`↔`rotate(14deg)` keyframe added to `app/globals.css`)
+while it moves, then settling still once it arrives. Deliberately driven
+by a manual `requestAnimationFrame` loop (`RUN_DURATION_MS = 1400`, cubic
+ease-out) rather than a CSS `transition` on `width` — a plain CSS
+transition would jump straight to the final `barColorClass` the instant
+React sets state, but recomputing `barColorClass(percent)` every animation
+frame is what makes the bar visibly shift green → amber → red mid-run if
+the landlord's usage crosses those thresholds, not just land on the final
+color. Skips straight to the final position (no animation) under
+`prefers-reduced-motion: reduce`. Tested by temporarily writing
+`message_usage.message_count = 850` for the test landlord directly via
+the service-role client (reverted after) to get a red-zone bar to look at,
+since the real account normally sits at 0. **Testing note, not a product
+bug**: this session's automated browser pane reports `document.hidden =
+true`, which makes `requestAnimationFrame` never fire until a screenshot
+forces a repaint (standard background-tab throttling per spec) — so the
+run always appeared to jump straight to its final frame when checked
+here, even though the DOM/CSS/class output was confirmed correct at every
+step. A real foreground tab does not have this problem; if this ever
+needs re-verifying in this environment, that's the harness, not the code.
+
+**Billing's "Contact us for custom enterprise pricing" now routes to
+`/support`** (`app/(landlord)/billing/page.tsx`) instead of being its own
+separate `mailto:` link — was duplicating (with a slightly different
+subject line) what the Support page's mailto link already does. One
+fewer place hardcoding the developer's email address if it ever changes.
+
 ## Environment setup
 
 Copy `.env.local.example` and fill in:

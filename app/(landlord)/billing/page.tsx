@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -109,7 +110,7 @@ export default async function BillingPage({
                 <li key={feature} className="flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-400">
                   <IconCheck
                     size={16}
-                    className="mt-0.5 shrink-0 text-zinc-400 dark:text-zinc-500"
+                    className="mt-0.5 shrink-0 text-green-600 dark:text-green-500"
                     aria-hidden="true"
                   />
                   <span>{feature}</span>
@@ -145,12 +146,9 @@ export default async function BillingPage({
 
       <p className="mt-4 text-sm text-zinc-500">
         Have more than 10 units?{" "}
-        <a
-          href="mailto:jeffreychang129@gmail.com?subject=Enterprise%20pricing%20inquiry"
-          className="underline"
-        >
+        <Link href="/support" className="underline">
           Contact us for custom enterprise pricing.
-        </a>
+        </Link>
       </p>
 
       {hasStripeSubscription && (
