@@ -1412,7 +1412,18 @@ and renders that row's own category icon immediately to the left of its
 line below — applies to both the active-wave and finished-wave dropdown
 lists, since they share the same row markup.
 
-## Environment setup (`.env.local`, gitignored — not in this repo)
+**Dropdown pill buttons invert to solid black on hover/tap (later
+session).** The plain white/outlined "Details" and "Add tenant" buttons
+inside `PropertyTile.tsx`'s expanded dropdown had no visual affordance
+that they were tappable/clickable at rest — nothing distinguished them
+from plain text until you were already on top of one. All three instances
+(vacant-property "Add tenant", per-row "Details" in the multi-row wave
+list, single-request "Details") now share one `pillButtonClass` constant
+with `hover:bg-black hover:text-white` (+ dark-mode equivalents) and the
+same on `active:`, so a mouse hover previews it and a mobile tap gets the
+same solid-black feedback via `:active` (no JS touch handling needed,
+unlike the tile row's own hover-tint mechanism above — these are plain
+navigating links, not toggle buttons, so CSS `:active` alone is enough). (`.env.local`, gitignored — not in this repo)
 
 Copy `.env.local.example` and fill in:
 - Supabase: project URL + anon key + service_role key from

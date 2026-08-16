@@ -77,6 +77,13 @@ export function PropertyTile({
   // grey version of the same treatment instead of no feedback at all.
   const rowTint = statusInteractiveClass(tone, open);
 
+  // Shared look for every plain white pill button inside the dropdown
+  // (Details, Add tenant) — inverts to solid black on hover, and on
+  // :active too so a tap gives the same feedback on mobile, where there's
+  // no hover state to reveal it's tappable otherwise.
+  const pillButtonClass =
+    "self-start rounded-full border border-black/10 px-3 py-1.5 text-xs font-medium transition-colors hover:bg-black hover:text-white active:bg-black active:text-white dark:border-white/20 dark:hover:bg-white dark:hover:text-black dark:active:bg-white dark:active:text-black";
+
   return (
     <li
       className={`overflow-hidden rounded-xl border border-black/10 shadow-[0_2px_10px_rgba(0,0,0,0.1)] dark:border-white/10 dark:shadow-[0_2px_10px_rgba(0,0,0,0.5)]`}
@@ -137,10 +144,7 @@ export function PropertyTile({
             {isVacant ? (
               <div className="flex flex-col gap-1">
                 <p className="text-sm text-zinc-500">No tenant yet.</p>
-                <Link
-                  href={addTenantHref}
-                  className="mt-2 self-start rounded-full border border-black/10 px-3 py-1.5 text-xs font-medium dark:border-white/20"
-                >
+                <Link href={addTenantHref} className={`mt-2 ${pillButtonClass}`}>
                   Add tenant
                 </Link>
               </div>
@@ -171,10 +175,7 @@ export function PropertyTile({
                           {r.description}
                         </p>
                       )}
-                      <Link
-                        href={`/requests/${r.id}`}
-                        className="mt-1 self-start rounded-full border border-black/10 px-3 py-1.5 text-xs font-medium dark:border-white/20"
-                      >
+                      <Link href={`/requests/${r.id}`} className={`mt-1 ${pillButtonClass}`}>
                         Details
                       </Link>
                     </div>
@@ -192,10 +193,7 @@ export function PropertyTile({
                     {newest.description}
                   </p>
                 )}
-                <Link
-                  href={`/requests/${newest.id}`}
-                  className="mt-2 self-start rounded-full border border-black/10 px-3 py-1.5 text-xs font-medium dark:border-white/20"
-                >
+                <Link href={`/requests/${newest.id}`} className={`mt-2 ${pillButtonClass}`}>
                   Details
                 </Link>
               </div>
