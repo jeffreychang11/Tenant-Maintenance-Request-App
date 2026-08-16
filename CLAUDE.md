@@ -1082,11 +1082,13 @@ Vercel doesn't remove old deployment aliases.
   them up — same pattern as the earlier env var fixes in the Vercel-deploy
   section above). Verified live: `simpleroost.com` still resolves/aliases
   correctly and the dashboard renders with existing session data intact
-  post-redeploy. Did not send a real test email as part of this
-  verification (Resend's own `"status":"verified"` on the domain is the
-  authoritative signal that sending from any `@simpleroost.com` address
-  will work) — worth a real end-to-end send (e.g. trigger a tenant invite)
-  next time email is touched, just to see a real message land.
+  post-redeploy. **Fully verified end-to-end in a follow-up session**: sent
+  a real email via a direct `POST https://api.resend.com/emails` call
+  (`from: notifications@simpleroost.com`, not routed through the app's
+  invite/notification code paths) to the user's own inbox
+  (`jeffreychang129@gmail.com`) — Resend accepted it (returned a message
+  id) and the user confirmed receipt. The `simpleroost.com` sending domain
+  is confirmed fully working, not just "verified" per the API.
 - The three DNS records Resend needs (already live on Namecheap): DKIM
   TXT at `resend._domainkey`, SPF MX at `send` (→
   `feedback-smtp.us-east-1.amazonses.com`, priority 10), SPF TXT at `send`
@@ -1390,6 +1392,25 @@ requests yet." — pre-existing behavior, unchanged. Verified live: two
 requests marked complete on one property showed the plain green
 "Complete" tile with both listed (individually badged, divided) in the
 dropdown.
+
+**Completed multi-request wave now stays icons-only, and each dropdown
+row shows its own icon too (later session).** The finished-wave "Complete"
+tile above used to fall back to `PropertyTile`'s single-category
+text+icon label once every request in a wave was done, even though the
+still-active "Multiple requests" state right next to it is icons-only —
+inconsistent. `DashboardPropertyList.tsx`'s `categorySummary` (previously
+computed only when `badgeStatus === "multiple"`, from `nonDoneRequests`)
+now also computes for the finished-wave case (`badgeStatus === "done"`
+with 2+ requests done together), summarizing `recentlyDoneRequests`
+instead since there's no "current need" left to distinguish once
+everything's done. `PropertyTile`'s header-row condition changed from
+`badgeStatus === "multiple" && categorySummary` to just `categorySummary`,
+so it renders icons-only for either source. Separately, each row inside
+the expanded multi-row dropdown (`waveRequests.map(...)`) now looks up
+and renders that row's own category icon immediately to the left of its
+`StatusBadge`, rather than only stating the category in the small text
+line below — applies to both the active-wave and finished-wave dropdown
+lists, since they share the same row markup.
 
 ## Environment setup (`.env.local`, gitignored — not in this repo)
 

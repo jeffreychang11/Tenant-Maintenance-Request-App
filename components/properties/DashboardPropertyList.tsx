@@ -258,19 +258,29 @@ export function DashboardPropertyList({
           ? recentlyDoneRequests[0]
           : undefined;
 
-    // One icon per distinct category currently needing attention, with a
-    // small ×N suffix when more than one active request shares a category
-    // — this is what actually needs doing right now, independent of the
-    // sticky "Multiple requests" text above (which can outlive a category
-    // once its own request is resolved, while a sibling still isn't).
+    // One icon per distinct category, with a small ×N suffix when more than
+    // one request in the group shares a category. While a wave is still
+    // active this is based on nonDoneRequests only — what actually needs
+    // doing right now, independent of the sticky "Multiple requests" text
+    // above (which can outlive a category once its own request is
+    // resolved, while a sibling still isn't). Once the whole wave finishes
+    // (badgeStatus "done" with 2+ requests done together), there's no
+    // "current need" left to distinguish, so it's based on every request
+    // in that finished wave instead — this is what keeps a completed
+    // multi-request property showing icons-only in the summary row rather
+    // than falling back to a single category's text label.
+    const summarize = (rows: RequestRow[]) =>
+      Array.from(
+        rows
+          .reduce((map, r) => map.set(r.category, (map.get(r.category) ?? 0) + 1), new Map<string, number>())
+          .entries()
+      ).map(([category, count]) => ({ category, count }));
     const categorySummary =
       badgeStatus === "multiple"
-        ? Array.from(
-            nonDoneRequests
-              .reduce((map, r) => map.set(r.category, (map.get(r.category) ?? 0) + 1), new Map<string, number>())
-              .entries()
-          ).map(([category, count]) => ({ category, count }))
-        : null;
+        ? summarize(nonDoneRequests)
+        : badgeStatus === "done" && recentlyDoneRequests.length >= 2
+          ? summarize(recentlyDoneRequests)
+          : null;
 
     // The multi-row, per-status-badge dropdown is used for two cases: an
     // active "Multiple requests" wave, or a wave that just finished (2+

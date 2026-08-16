@@ -92,7 +92,7 @@ export function PropertyTile({
           <p className="truncate text-sm text-zinc-600 dark:text-zinc-400">{addressLine}</p>
         </div>
         <div className="flex shrink-0 items-center gap-3">
-          {badgeStatus === "multiple" && categorySummary ? (
+          {categorySummary ? (
             <span className="flex items-center gap-2 text-zinc-600 dark:text-zinc-300">
               {categorySummary.map(({ category, count }) => {
                 const Icon = CATEGORIES.find((c) => c.value === category)?.icon;
@@ -146,28 +146,40 @@ export function PropertyTile({
               </div>
             ) : waveRequests ? (
               <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10">
-                {waveRequests.map((r) => (
-                  <div key={r.id} className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-medium">{r.title}</p>
-                      <StatusBadge status={r.status} />
-                    </div>
-                    <p className="text-xs text-zinc-500">
-                      {categoryLabel(r.category)} · {r.timeLabel}
-                    </p>
-                    {r.description && (
-                      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                        {r.description}
+                {waveRequests.map((r) => {
+                  const RowIcon = CATEGORIES.find((c) => c.value === r.category)?.icon;
+                  return (
+                    <div key={r.id} className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-medium">{r.title}</p>
+                        <span className="flex shrink-0 items-center gap-2">
+                          {RowIcon && (
+                            <RowIcon
+                              size={18}
+                              aria-hidden="true"
+                              className="text-zinc-500 dark:text-zinc-400"
+                            />
+                          )}
+                          <StatusBadge status={r.status} />
+                        </span>
+                      </div>
+                      <p className="text-xs text-zinc-500">
+                        {categoryLabel(r.category)} · {r.timeLabel}
                       </p>
-                    )}
-                    <Link
-                      href={`/requests/${r.id}`}
-                      className="mt-1 self-start rounded-full border border-black/10 px-3 py-1.5 text-xs font-medium dark:border-white/20"
-                    >
-                      Details
-                    </Link>
-                  </div>
-                ))}
+                      {r.description && (
+                        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                          {r.description}
+                        </p>
+                      )}
+                      <Link
+                        href={`/requests/${r.id}`}
+                        className="mt-1 self-start rounded-full border border-black/10 px-3 py-1.5 text-xs font-medium dark:border-white/20"
+                      >
+                        Details
+                      </Link>
+                    </div>
+                  );
+                })}
               </div>
             ) : newest ? (
               <div className="flex flex-col gap-1">
