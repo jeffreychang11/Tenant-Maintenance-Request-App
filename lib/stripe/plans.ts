@@ -55,7 +55,7 @@ export const BASE_MESSAGE_CAP: Record<Tier, number> = {
 export function planFeatures(tier: Tier): string[] {
   const cap = BASE_MESSAGE_CAP[tier].toLocaleString();
   const shared = [
-    "Instant, lightweight video previews to pinpoint the exact problem in seconds",
+    "Instant, lightweight video/photo attachments to pinpoint the exact problem in seconds",
     "Realtime chat on every maintenance request, with photo and video attachments",
     "Status tracking from Open to In Progress to Complete, so nothing falls through the cracks",
   ];

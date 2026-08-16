@@ -27,23 +27,34 @@ function RoosterIcon({
 }) {
   return (
     <svg
-      viewBox="0 0 40 32"
-      width="28"
-      height="22"
+      viewBox="0 0 44 36"
+      width="32"
+      height="26"
       className={className}
       style={style}
       aria-hidden="true"
     >
-      <line x1="16" y1="24" x2="14" y2="30" stroke="#92400e" strokeWidth="2" strokeLinecap="round" />
-      <line x1="22" y1="24" x2="24" y2="30" stroke="#92400e" strokeWidth="2" strokeLinecap="round" />
-      <path d="M14 14 C4 8, 2 2, 8 4 C6 10, 10 14, 14 14 Z" fill="#5c3a21" />
-      <path d="M15 16 C6 14, 2 10, 6 8 C7 14, 12 17, 15 16 Z" fill="#7c4a22" />
-      <ellipse cx="19" cy="18" rx="11" ry="8" fill="#8b5a2b" />
-      <circle cx="29" cy="10" r="5.5" fill="#8b5a2b" />
-      <path d="M25 4 Q26 1 27 4 Q28 1 29 4 Q30 1 31 4 Q30 6 27 6 Q25 6 25 4 Z" fill="#dc2626" />
-      <path d="M31 12 Q33 13 31 16 Q29 14 31 12 Z" fill="#dc2626" />
-      <path d="M34 9 L39 10.5 L34 12 Z" fill="#f59e0b" />
-      <circle cx="30" cy="8.5" r="1" fill="#1c1917" />
+      <line x1="18" y1="26" x2="16" y2="33" stroke="#78350f" strokeWidth="2" strokeLinecap="round" />
+      <line x1="16" y1="33" x2="13" y2="34.5" stroke="#78350f" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="16" y1="33" x2="18" y2="35" stroke="#78350f" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="25" y1="26" x2="27" y2="33" stroke="#78350f" strokeWidth="2" strokeLinecap="round" />
+      <line x1="27" y1="33" x2="24" y2="34.5" stroke="#78350f" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="27" y1="33" x2="29" y2="35" stroke="#78350f" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M16 16 C4 6, 0 -2, 9 1 C6 9, 12 15, 16 16 Z" fill="#4a2c17" />
+      <path d="M17 18 C6 12, 1 6, 7 5 C7 12, 13 19, 17 18 Z" fill="#6b4423" />
+      <path d="M18 20 C8 17, 4 12, 9 10 C9 16, 14 21, 18 20 Z" fill="#8b5a2b" />
+      <ellipse cx="20" cy="19" rx="11" ry="8" fill="#8b5a2b" />
+      <path d="M14 15 Q22 14 24 22 Q17 24 13 19 Q12 16 14 15 Z" fill="#6b4423" />
+      <ellipse cx="24" cy="23" rx="4" ry="3" fill="#c9a876" opacity="0.85" />
+      <circle cx="31" cy="10" r="5.5" fill="#8b5a2b" />
+      <path
+        d="M27 4 Q27.5 1 28.5 3.5 Q29.5 0.5 30.5 3.5 Q31.5 0.5 32.5 3.5 Q33.5 1 34 4 Q33 6.5 30.5 6.5 Q28 6.5 27 4 Z"
+        fill="#dc2626"
+      />
+      <path d="M33 13 Q35.5 14.5 33 18 Q30.5 15 33 13 Z" fill="#dc2626" />
+      <path d="M36 10 L42 11.5 L36 13.5 Z" fill="#f59e0b" />
+      <circle cx="32" cy="8.5" r="1.1" fill="#1c1917" />
+      <circle cx="32.3" cy="8.2" r="0.35" fill="#fff" />
     </svg>
   );
 }
@@ -104,16 +115,16 @@ export function MessageUsageBar({ usage }: { usage: MessageUsage }) {
         {usage.messagesUsed} of {usage.baseCap} messages used this month
         {usage.bundleCap > 0 && ` (+${usage.bundleCap} purchased)`}.
       </p>
-      <div className="relative mt-4 h-6 w-full">
-        <div className="absolute bottom-0 h-2.5 w-full overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
+      <div className="relative mt-4 h-7 w-full">
+        <div className="absolute top-1/2 h-2.5 w-full -translate-y-1/2 overflow-hidden rounded-full bg-black/10 dark:bg-white/10">
           <div
             className={`h-full rounded-full ${barColorClass(percent)}`}
             style={{ width: `${percent}%` }}
           />
         </div>
         <RoosterIcon
-          className={`absolute bottom-1 ${running ? "animate-rooster-waddle" : ""}`}
-          style={{ left: `${percent}%`, transform: running ? undefined : "translateX(-50%)" }}
+          className={`absolute top-1/2 ${running ? "animate-rooster-waddle" : ""}`}
+          style={{ left: `${percent}%`, transform: running ? undefined : "translate(-50%, -50%)" }}
         />
       </div>
       {usage.inBufferZone && !usage.blocked && (

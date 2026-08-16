@@ -1524,6 +1524,29 @@ keyframes (`translateX(-50%) rotate(...)`) needed no changes since the
 positioning axis they operate on didn't change, only the vertical anchor
 did.
 
+**Rooster refined further and re-centered on the bar (later session)** —
+two follow-up asks. (1) More detail added to `RoosterIcon`'s `viewBox`
+(now `0 0 44 36`, rendered slightly larger at 32×26): three layered tail
+feathers instead of two, a folded-wing shape overlapping the body, a
+lighter breast/belly patch for a two-tone look, a jagged 4-point comb
+instead of a smooth scallop, small forked feet, and an eye highlight dot.
+(2) Repositioning — the previous `bottom-1`-anchored version still read
+as "standing above" the bar rather than centered on it, so both the
+track and the rooster are now anchored via `top-1/2` +
+`-translate-y-1/2` off a shared wrapper instead of the track being
+`bottom-0`-pinned, putting the rooster's vertical center exactly on the
+bar's vertical center. The waddle keyframes in `globals.css` changed
+from `translateX(-50%) rotate(...)` to `translate(-50%, -50%)
+rotate(...)` to match — this **does** need to change in lockstep any
+time the resting-state inline `transform` on `RoosterIcon` changes,
+unlike the previous bottom-anchored version where only the horizontal
+axis was transform-driven.
+
+**Plan-card copy**: "Instant, lightweight video previews..." →
+"Instant, lightweight video/photo attachments..." in
+`lib/stripe/plans.ts`'s `planFeatures()` — the old wording undersold it
+by implying video-only, when photo attachments work the same way.
+
 ## Environment setup
 
 Copy `.env.local.example` and fill in:
