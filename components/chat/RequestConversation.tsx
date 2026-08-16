@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { IconPlayerPlay, IconX } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
 import { triggerNotificationProcessing } from "@/lib/notifications/trigger";
@@ -17,19 +18,34 @@ type Message = {
   attachments: MessageAttachment[];
 };
 
+function BlockedNotice() {
+  return (
+    <p className="mt-3 text-sm text-red-700 dark:text-red-400">
+      You&apos;ve used all your messages for this month.{" "}
+      <Link href="/settings" className="underline">
+        Manage usage
+      </Link>{" "}
+      to keep replying.
+    </p>
+  );
+}
+
 export function RequestConversation({
   requestId,
   currentUserId,
   initialMessages,
+  initialBlocked = false,
 }: {
   requestId: string;
   currentUserId: string;
   initialMessages: Message[];
+  initialBlocked?: boolean;
 }) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [replying, setReplying] = useState(false);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
+  const [blocked, setBlocked] = useState(initialBlocked);
   const [lightbox, setLightbox] = useState<{ url: string; type: "image" | "video" } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -75,7 +91,7 @@ export function RequestConversation({
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
-    if (!body.trim()) return;
+    if (!body.trim() || blocked) return;
     setSending(true);
     const supabase = createClient();
     const { error } = await supabase.from("request_messages").insert({
@@ -87,6 +103,8 @@ export function RequestConversation({
       setBody("");
       setReplying(false);
       triggerNotificationProcessing();
+    } else if (error.message.includes("message_cap_exceeded")) {
+      setBlocked(true);
     }
     setSending(false);
   }
@@ -131,7 +149,9 @@ export function RequestConversation({
   return (
     <div className="mt-6">
       {!hasReply &&
-        (replying ? (
+        (blocked ? (
+          <BlockedNotice />
+        ) : replying ? (
           <form onSubmit={handleSend} className="mt-3 flex gap-2">
             <input
               autoFocus
@@ -198,21 +218,25 @@ export function RequestConversation({
             })}
             <div ref={bottomRef} />
           </div>
-          <form onSubmit={handleSend} className="mt-3 flex gap-2">
-            <input
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              placeholder="Write a reply..."
-              className="flex-1 rounded-md border border-black/10 px-3 py-2 text-sm dark:border-white/20 dark:bg-black"
-            />
-            <button
-              type="submit"
-              disabled={sending}
-              className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
-            >
-              Send
-            </button>
-          </form>
+          {blocked ? (
+            <BlockedNotice />
+          ) : (
+            <form onSubmit={handleSend} className="mt-3 flex gap-2">
+              <input
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                placeholder="Write a reply..."
+                className="flex-1 rounded-md border border-black/10 px-3 py-2 text-sm dark:border-white/20 dark:bg-black"
+              />
+              <button
+                type="submit"
+                disabled={sending}
+                className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+              >
+                Send
+              </button>
+            </form>
+          )}
         </>
       )}
 

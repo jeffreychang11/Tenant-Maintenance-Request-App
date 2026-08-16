@@ -5,6 +5,12 @@ import { requireProfile } from "@/lib/auth";
 import { stripe } from "@/lib/stripe/client";
 import { priceIdFor, PLAN_LABELS, UNIT_RANGES, type Tier, type BillingInterval } from "@/lib/stripe/plans";
 import { getSubscriptionForLandlord, countUnitsForLandlord } from "@/lib/billing/subscription";
+import { createMessageBundleCheckoutSession } from "@/lib/billing/messageBundle";
+import {
+  checkMessageCapUpgrade,
+  applyConfirmedMessageCapUpgrade,
+  type MessageCapUpgradeResult,
+} from "@/lib/billing/messageLimit";
 import { createClient } from "@/lib/supabase/server";
 
 const MIN_TRIAL_END_LEAD_MS = 49 * 60 * 60 * 1000; // Stripe requires >= 48h out, or "now"
@@ -57,6 +63,22 @@ export async function createCheckoutSession(formData: FormData) {
 
   if (!session.url) throw new Error("Couldn't start checkout — try again.");
   redirect(session.url);
+}
+
+export async function createMessageBundleCheckout() {
+  const { user } = await requireProfile();
+  const { url } = await createMessageBundleCheckoutSession(user.id, user.email ?? undefined);
+  redirect(url);
+}
+
+export async function previewMessageCapUpgrade(): Promise<MessageCapUpgradeResult> {
+  const { user } = await requireProfile();
+  return checkMessageCapUpgrade(user.id);
+}
+
+export async function confirmMessageCapUpgrade() {
+  const { user } = await requireProfile();
+  await applyConfirmedMessageCapUpgrade(user.id);
 }
 
 export async function createPortalSession() {

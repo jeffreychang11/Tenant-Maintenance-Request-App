@@ -2,8 +2,8 @@ export type Tier = "tier_1_3" | "tier_4_10";
 export type BillingInterval = "month" | "year";
 
 export const PLAN_LABELS: Record<Tier, string> = {
-  tier_1_3: "1-3 units",
-  tier_4_10: "4-10 units",
+  tier_1_3: "Basic",
+  tier_4_10: "Premium",
 };
 
 export const PLAN_PRICES: Record<Tier, { month: string; year: string | null }> = {
@@ -42,6 +42,37 @@ export const PLAN_DESCRIPTIONS: Record<Tier, string> = {
   tier_1_3: "I just want tenants to stop texting my personal cell phone.",
   tier_4_10: "I run a small business and need a professional dashboard.",
 };
+
+// Marketing-copy mirror of the monthly chat-message cap actually enforced
+// by effective_message_cap() in
+// supabase/migrations/20260816090100_message_cap_trigger_and_rpc.sql — keep
+// these two numbers in sync if the caps ever change.
+export const BASE_MESSAGE_CAP: Record<Tier, number> = {
+  tier_1_3: 350,
+  tier_4_10: 1000,
+};
+
+export function planFeatures(tier: Tier): string[] {
+  const cap = BASE_MESSAGE_CAP[tier].toLocaleString();
+  const shared = [
+    "Instant, lightweight video previews to pinpoint the exact problem in seconds",
+    "Realtime chat on every maintenance request, with photo and video attachments",
+    "Status tracking from Open to In Progress to Complete, so nothing falls through the cracks",
+  ];
+  if (tier === "tier_1_3") {
+    return [
+      `Up to ${UNIT_RANGES.tier_1_3.max} units across your properties`,
+      `${cap} messages a month — keeps tenant communication structured in one place instead of spilling into personal texts and calls`,
+      ...shared,
+    ];
+  }
+  return [
+    `Up to ${UNIT_RANGES.tier_4_10.max} units across your properties`,
+    `${cap} messages a month, with the option to add more — room for higher tenant volume without losing structure or tenants spamming your dashboard`,
+    ...shared,
+    "Built for a growing portfolio, with room to scale past a handful of units",
+  ];
+}
 
 // Safely displays a price for a (tier, interval) pair read back from the
 // DB, where both columns are plain nullable `text` rather than the typed

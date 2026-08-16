@@ -58,6 +58,13 @@ const INTERACTIVE_TINT: Record<string, { hoverActive: string; selected: string }
     hoverActive: "hover:bg-zinc-100 dark:hover:bg-zinc-800/60 active:bg-zinc-100 dark:active:bg-zinc-800/60",
     selected: "bg-zinc-100 dark:bg-zinc-800/60",
   },
+  // Also not a real request status — a property-level pseudo-key for when
+  // 2+ requests need attention at once (see DashboardPropertyList's
+  // isMultiWave). Blue, distinct from any single-request status color.
+  multiple: {
+    hoverActive: "hover:bg-blue-100 dark:hover:bg-blue-950/60 active:bg-blue-100 dark:active:bg-blue-950/60",
+    selected: "bg-blue-100 dark:bg-blue-950/60",
+  },
 };
 
 // Used by both a plain toggle tile (the landlord's PropertyTile, passing

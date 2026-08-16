@@ -4,6 +4,7 @@ import { IconArrowLeft } from "@tabler/icons-react";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { loadRequestDetail } from "@/lib/requests";
+import { getMessageUsage } from "@/lib/billing/messageLimit";
 import { RequestDetail } from "@/components/requests/RequestDetail";
 import { RequestConversation } from "@/components/chat/RequestConversation";
 import { LandlordStatusControls } from "@/components/requests/StatusControls";
@@ -18,7 +19,10 @@ export default async function LandlordRequestDetailPage({
   const { requestId } = await params;
   const supabase = await createClient();
 
-  const result = await loadRequestDetail(supabase, requestId);
+  const [result, usage] = await Promise.all([
+    loadRequestDetail(supabase, requestId),
+    getMessageUsage(supabase),
+  ]);
   if (!result) notFound();
 
   return (
@@ -43,6 +47,7 @@ export default async function LandlordRequestDetailPage({
         requestId={requestId}
         currentUserId={user.id}
         initialMessages={result.messages}
+        initialBlocked={usage.blocked}
       />
       <LandlordStatusControls requestId={requestId} status={result.request.status} />
     </div>

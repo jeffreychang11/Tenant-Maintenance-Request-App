@@ -10,6 +10,7 @@ type NewestRequest = {
   id: string;
   title: string;
   category: string;
+  status: string;
   description: string | null;
   timeLabel: string;
 };
@@ -19,14 +20,18 @@ export function PropertyTile({
   addressLine,
   badgeStatus,
   categoryValue,
+  categorySummary,
   newest,
+  waveRequests,
   addTenantHref,
 }: {
   tenantName: string | null;
   addressLine: string;
-  badgeStatus: "open" | "in_progress" | "done" | null;
+  badgeStatus: "open" | "in_progress" | "done" | "multiple" | null;
   categoryValue: string | null;
+  categorySummary: { category: string; count: number }[] | null;
   newest: NewestRequest | null;
+  waveRequests: NewestRequest[] | null;
   addTenantHref: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -37,13 +42,32 @@ export function PropertyTile({
 
   const isVacant = !tenantName;
 
-  const barColor = isVacant
-    ? "border-l-transparent"
-    : badgeStatus === "open"
-      ? "border-l-red-500"
-      : badgeStatus === "in_progress"
-        ? "border-l-amber-500"
-        : "border-l-green-500";
+  // Single source of truth for the tile's color, shared by the left bar
+  // and the hover/select tint below — badgeStatus is null both for a
+  // recently-done request past its 24h window AND a property with no
+  // requests at all, and both cases still render a green bar, so the tone
+  // falls through to "done" (green) whenever it isn't open/in_progress/
+  // multiple.
+  const tone = isVacant
+    ? "vacant"
+    : badgeStatus === "multiple"
+      ? "multiple"
+      : badgeStatus === "open"
+        ? "open"
+        : badgeStatus === "in_progress"
+          ? "in_progress"
+          : "done";
+
+  const barColor =
+    tone === "vacant"
+      ? "border-l-transparent"
+      : tone === "multiple"
+        ? "border-l-blue-500"
+        : tone === "open"
+          ? "border-l-red-500"
+          : tone === "in_progress"
+            ? "border-l-amber-500"
+            : "border-l-green-500";
 
   // No resting background tint — the row stays plain until interacted
   // with: hovering (desktop) previews the color, and it stays lit once
@@ -51,7 +75,7 @@ export function PropertyTile({
   // tap has no lingering :hover of its own to keep it lit otherwise). A
   // vacant property has no status color to reach for, so it gets a plain
   // grey version of the same treatment instead of no feedback at all.
-  const rowTint = statusInteractiveClass(isVacant ? "vacant" : badgeStatus, open);
+  const rowTint = statusInteractiveClass(tone, open);
 
   return (
     <li
@@ -68,13 +92,33 @@ export function PropertyTile({
           <p className="truncate text-sm text-zinc-600 dark:text-zinc-400">{addressLine}</p>
         </div>
         <div className="flex shrink-0 items-center gap-3">
-          {CategoryIcon && categoryValue && (
-            <span className="flex items-center gap-1.5 text-sm font-medium text-zinc-600 dark:text-zinc-300">
-              <CategoryIcon size={20} aria-hidden="true" />
-              {categoryLabel(categoryValue)}
+          {badgeStatus === "multiple" && categorySummary ? (
+            <span className="flex items-center gap-2 text-zinc-600 dark:text-zinc-300">
+              {categorySummary.map(({ category, count }) => {
+                const Icon = CATEGORIES.find((c) => c.value === category)?.icon;
+                if (!Icon) return null;
+                return (
+                  <span key={category} className="flex items-center gap-0.5">
+                    <Icon size={20} aria-hidden="true" />
+                    {count > 1 && <span className="text-xs font-medium">×{count}</span>}
+                  </span>
+                );
+              })}
             </span>
+          ) : (
+            CategoryIcon &&
+            categoryValue && (
+              <span className="flex items-center gap-1.5 text-sm font-medium text-zinc-600 dark:text-zinc-300">
+                <CategoryIcon size={20} aria-hidden="true" />
+                {categoryLabel(categoryValue)}
+              </span>
+            )
           )}
-          {badgeStatus === "done" ? (
+          {badgeStatus === "multiple" ? (
+            <span className="whitespace-nowrap rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-400">
+              Multiple requests
+            </span>
+          ) : badgeStatus === "done" ? (
             <span className="whitespace-nowrap rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-400">
               Complete
             </span>
@@ -99,6 +143,31 @@ export function PropertyTile({
                 >
                   Add tenant
                 </Link>
+              </div>
+            ) : waveRequests ? (
+              <div className="flex flex-col divide-y divide-black/10 dark:divide-white/10">
+                {waveRequests.map((r) => (
+                  <div key={r.id} className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-medium">{r.title}</p>
+                      <StatusBadge status={r.status} />
+                    </div>
+                    <p className="text-xs text-zinc-500">
+                      {categoryLabel(r.category)} · {r.timeLabel}
+                    </p>
+                    {r.description && (
+                      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                        {r.description}
+                      </p>
+                    )}
+                    <Link
+                      href={`/requests/${r.id}`}
+                      className="mt-1 self-start rounded-full border border-black/10 px-3 py-1.5 text-xs font-medium dark:border-white/20"
+                    >
+                      Details
+                    </Link>
+                  </div>
+                ))}
               </div>
             ) : newest ? (
               <div className="flex flex-col gap-1">

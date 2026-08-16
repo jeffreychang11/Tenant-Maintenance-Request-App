@@ -124,7 +124,6 @@ export function DashboardPropertyList({
       .from("request_status_history")
       .select("request_id, created_at")
       .eq("to_status", "done")
-      .gte("created_at", new Date(Date.now() - DAY_MS).toISOString())
       .then(({ data }) => {
         if (data) setDoneAt(toDoneAtMap(data));
       });
@@ -193,20 +192,57 @@ export function DashboardPropertyList({
       .flatMap((u) => u.tenant_units)
       .find((tu) => tu.status === "active")?.profiles?.full_name;
 
-    const hasOpen = propertyRequests.some((r) => r.status === "open" || r.status === "reopened");
-    const hasInProgress = propertyRequests.some((r) => r.status === "in_progress");
-    const recentlyDone = !hasOpen && !hasInProgress
-      ? propertyRequests.find(
+    const nonDoneRequests = propertyRequests.filter(
+      (r) => r.status === "open" || r.status === "reopened" || r.status === "in_progress"
+    );
+    const doneRequests = propertyRequests.filter((r) => r.status === "done");
+
+    // "Multiple requests" (blue) fires once 2+ requests need attention at
+    // the same time, and is sticky: it stays even as they're resolved one
+    // by one, only clearing once every request from that wave is done. A
+    // done request still counts as part of the current wave if it was
+    // marked done *after* the earliest still-active request was created
+    // — i.e. they were genuinely open together at some point, not just
+    // two unrelated issues months apart. waveRequests is every request in
+    // that wave (active + qualifying done), for the dropdown list below;
+    // categorySummary further down deliberately only looks at
+    // nonDoneRequests, since icons represent current need, not history.
+    const earliestActive = nonDoneRequests.length > 0
+      ? nonDoneRequests.reduce((min, r) => (r.created_at < min.created_at ? r : min))
+      : null;
+    const qualifyingDone = earliestActive
+      ? doneRequests.filter((d) => {
+          const doneTs = doneAt[d.id];
+          return doneTs && doneTs >= earliestActive.created_at;
+        })
+      : [];
+    const waveIds = new Set([...nonDoneRequests, ...qualifyingDone].map((r) => r.id));
+    const waveRequests = propertyRequests.filter((r) => waveIds.has(r.id));
+    const isMultiWave = nonDoneRequests.length > 0 && waveRequests.length >= 2;
+
+    const hasOpen = nonDoneRequests.some((r) => r.status === "open" || r.status === "reopened");
+    const hasInProgress = nonDoneRequests.some((r) => r.status === "in_progress");
+    // Every request done within the last 24h, once nothing is left active —
+    // plural, not just the single newest one, so a property that just
+    // finished an entire multi-request wave can still list all of them
+    // (each showing its own "Complete" badge) rather than collapsing to
+    // just one. For the ordinary single-request case this is just a
+    // one-item array, so the dropdown still falls back to the plain
+    // single-preview block below (see waveRequests/dropdownRequests).
+    const recentlyDoneRequests = nonDoneRequests.length === 0
+      ? propertyRequests.filter(
           (r) => r.status === "done" && r.id in doneAt && Date.now() - Date.parse(doneAt[r.id]) < DAY_MS
         )
-      : undefined;
-    const badgeStatus: "open" | "in_progress" | "done" | null = hasOpen
-      ? "open"
-      : hasInProgress
-        ? "in_progress"
-        : recentlyDone
-          ? "done"
-          : null;
+      : [];
+    const badgeStatus: "open" | "in_progress" | "done" | "multiple" | null = isMultiWave
+      ? "multiple"
+      : hasOpen
+        ? "open"
+        : hasInProgress
+          ? "in_progress"
+          : recentlyDoneRequests.length > 0
+            ? "done"
+            : null;
 
     // The specific request driving the status badge, so the category icon,
     // expanded preview, and Details link all point at what the badge is
@@ -215,10 +251,38 @@ export function DashboardPropertyList({
     // open/in progress/recently done (nothing for the badge to show).
     const relevantRequest =
       badgeStatus === "open" || badgeStatus === "in_progress"
-        ? propertyRequests.find((r) =>
+        ? nonDoneRequests.find((r) =>
             badgeStatus === "open" ? r.status === "open" || r.status === "reopened" : r.status === "in_progress"
           )
-        : recentlyDone;
+        : badgeStatus === "done"
+          ? recentlyDoneRequests[0]
+          : undefined;
+
+    // One icon per distinct category currently needing attention, with a
+    // small ×N suffix when more than one active request shares a category
+    // — this is what actually needs doing right now, independent of the
+    // sticky "Multiple requests" text above (which can outlive a category
+    // once its own request is resolved, while a sibling still isn't).
+    const categorySummary =
+      badgeStatus === "multiple"
+        ? Array.from(
+            nonDoneRequests
+              .reduce((map, r) => map.set(r.category, (map.get(r.category) ?? 0) + 1), new Map<string, number>())
+              .entries()
+          ).map(([category, count]) => ({ category, count }))
+        : null;
+
+    // The multi-row, per-status-badge dropdown is used for two cases: an
+    // active "Multiple requests" wave, or a wave that just finished (2+
+    // requests all done within the last 24h). Anything else (a single
+    // request, or nothing) falls back to PropertyTile's plain
+    // single-preview block, unchanged.
+    const dropdownRequests =
+      badgeStatus === "multiple"
+        ? waveRequests
+        : badgeStatus === "done" && recentlyDoneRequests.length >= 2
+          ? recentlyDoneRequests
+          : null;
 
     return {
       property: p,
@@ -227,21 +291,25 @@ export function DashboardPropertyList({
       tenantName,
       badgeStatus,
       relevantRequest,
+      waveRequests: dropdownRequests,
+      categorySummary,
     };
   });
 
-  // Five tiers, most urgent first, mirroring the tile's own color bar: red
-  // (open/reopened) worst, then yellow (in progress), then green-Complete
+  // Six tiers, most urgent first, mirroring the tile's own color bar: blue
+  // (multiple requests needing attention) worst, then red (a single
+  // open/reopened request), then yellow (in progress), then green-Complete
   // (just done), then a plain green tile with nothing to show, then vacant
   // always last since no one lives there and no requests will be filed for
   // the time being. Within a tier, whichever property has the most
   // recently created request rises to the top.
   const tierRank = (entry: (typeof withRequests)[number]) => {
-    if (entry.isVacant) return 4;
-    if (entry.badgeStatus === "open") return 0;
-    if (entry.badgeStatus === "in_progress") return 1;
-    if (entry.badgeStatus === "done") return 2;
-    return 3;
+    if (entry.isVacant) return 5;
+    if (entry.badgeStatus === "multiple") return 0;
+    if (entry.badgeStatus === "open") return 1;
+    if (entry.badgeStatus === "in_progress") return 2;
+    if (entry.badgeStatus === "done") return 3;
+    return 4;
   };
 
   const orderedProperties = [...withRequests].sort((a, b) => {
@@ -257,7 +325,7 @@ export function DashboardPropertyList({
 
   return (
     <ul className="mt-6 flex flex-col gap-2">
-      {orderedProperties.map(({ property: p, tenantName, badgeStatus, relevantRequest }) => {
+      {orderedProperties.map(({ property: p, tenantName, badgeStatus, relevantRequest, waveRequests, categorySummary }) => {
         // Only ever the request driving the current badge (open /
         // in progress / done-within-24h) — once a done request ages past
         // that window there's no live status to show, so the dropdown
@@ -270,6 +338,15 @@ export function DashboardPropertyList({
         const addTenantHref =
           p.units.length === 1 ? `/properties/${p.id}/units/${p.units[0].id}` : `/properties/${p.id}`;
 
+        const toRow = (r: RequestRow) => ({
+          id: r.id,
+          title: r.title,
+          category: r.category,
+          status: r.status,
+          description: r.description,
+          timeLabel: formatRelativeTime(r.created_at),
+        });
+
         return (
           <PropertyTile
             key={p.id}
@@ -277,18 +354,10 @@ export function DashboardPropertyList({
             addressLine={p.addressLine}
             badgeStatus={badgeStatus}
             categoryValue={badgeStatus ? (relevantRequest?.category ?? null) : null}
+            categorySummary={categorySummary}
             addTenantHref={addTenantHref}
-            newest={
-              newest
-                ? {
-                    id: newest.id,
-                    title: newest.title,
-                    category: newest.category,
-                    description: newest.description,
-                    timeLabel: formatRelativeTime(newest.created_at),
-                  }
-                : null
-            }
+            newest={newest ? toRow(newest) : null}
+            waveRequests={waveRequests ? waveRequests.map(toRow) : null}
           />
         );
       })}

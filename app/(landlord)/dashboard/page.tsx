@@ -20,15 +20,17 @@ export default async function LandlordDashboardPage() {
     .eq("landlord_id", user.id)
     .order("created_at", { ascending: false });
 
-  // Drives the 24-hour "Complete" badge on the dashboard tile. Sourced from
-  // request_status_history (not maintenance_requests.updated_at, which also
-  // gets bumped by unrelated chat messages) so the window reflects when the
-  // request actually was marked done, not when it was last touched.
+  // Drives both the 24-hour "Complete" badge (checked against this
+  // timestamp at the point of use) and the "Multiple requests" sticky-wave
+  // logic, which needs to know exactly when a request was marked done —
+  // regardless of how long ago — to tell whether it was still open at the
+  // same time a sibling request was created. Sourced from
+  // request_status_history (not maintenance_requests.updated_at, which
+  // also gets bumped by unrelated chat messages).
   const { data: doneEvents } = await supabase
     .from("request_status_history")
     .select("request_id, created_at")
-    .eq("to_status", "done")
-    .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+    .eq("to_status", "done");
 
   return (
     <div className="mx-auto max-w-2xl">

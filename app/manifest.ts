@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Home Maintenance",
-    short_name: "Maintenance",
+    name: "SimpleRoost",
+    short_name: "SimpleRoost",
     description: "Submit and track home maintenance requests with your landlord.",
     start_url: "/",
     display: "standalone",

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { IconMenu2, IconX } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
+import { Logo } from "./Logo";
 
 type LandlordContact = {
   full_name: string | null;
@@ -35,7 +36,8 @@ export function TenantNavBar({ landlordContact }: { landlordContact?: LandlordCo
   }
 
   return (
-    <header className="relative flex items-center justify-end px-6 py-3">
+    <header className="relative flex items-center justify-between px-6 py-3">
+      <Logo href="/home" />
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? "Close menu" : "Open menu"}

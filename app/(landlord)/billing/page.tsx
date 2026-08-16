@@ -5,11 +5,14 @@ import {
   countUnitsForLandlord,
   getSubscriptionForLandlord,
 } from "@/lib/billing/subscription";
+import { IconCheck } from "@tabler/icons-react";
 import {
+  PLAN_LABELS,
   PLAN_PRICES,
   PLAN_DESCRIPTIONS,
   YEARLY_SAVINGS_PERCENT,
   planPriceLabel,
+  planFeatures,
 } from "@/lib/stripe/plans";
 import { createCheckoutSession, createPortalSession } from "@/app/(landlord)/billing/actions";
 
@@ -79,7 +82,7 @@ export default async function BillingPage({
           if (!price) return null;
           return (
             <p className="mt-4 rounded-xl border border-black/10 px-4 py-3 text-sm dark:border-white/10">
-              You&apos;re on the {sub.tier === "tier_4_10" ? "4-10 units" : "1-3 units"} plan (
+              You&apos;re on the {PLAN_LABELS[sub.tier as "tier_1_3" | "tier_4_10"]} plan (
               {price}),
               {sub.billing_interval === "year" ? " billed yearly" : " billed monthly"}
               {sub.current_period_end &&
@@ -96,11 +99,23 @@ export default async function BillingPage({
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         {(["tier_1_3", "tier_4_10"] as const).map((tier) => (
           <div key={tier} className="rounded-xl border border-black/10 p-4 dark:border-white/10">
-            <p className="font-medium">{tier === "tier_1_3" ? "1-3 units" : "4-10 units"}</p>
+            <p className="font-medium">{PLAN_LABELS[tier]}</p>
             <p className="mt-1 text-2xl font-medium">{PLAN_PRICES[tier].month}</p>
             <p className="mt-2 text-sm italic text-zinc-500">
               &ldquo;{PLAN_DESCRIPTIONS[tier]}&rdquo;
             </p>
+            <ul className="mt-3 flex flex-col gap-1.5">
+              {planFeatures(tier).map((feature) => (
+                <li key={feature} className="flex items-start gap-2 text-sm text-zinc-600 dark:text-zinc-400">
+                  <IconCheck
+                    size={16}
+                    className="mt-0.5 shrink-0 text-zinc-400 dark:text-zinc-500"
+                    aria-hidden="true"
+                  />
+                  <span>{feature}</span>
+                </li>
+              ))}
+            </ul>
             <div className="mt-4 flex flex-col gap-2">
               <form action={createCheckoutSession}>
                 <input type="hidden" name="tier" value={tier} />

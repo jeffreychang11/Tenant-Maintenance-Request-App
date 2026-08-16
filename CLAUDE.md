@@ -23,8 +23,49 @@ Auth, Storage, Realtime) + Resend (email) + Web Push (VAPID) + Stripe
 3. ✅ Maintenance requests + photo/video attachments (Storage) + both dashboards
 4. ✅ Realtime chat + status lifecycle RPC + history + reopen
 5. ✅ Notification outbox (push + email), triggered from DB events
-6. 🔶 Partially done — see below. Still remaining: rate limiting, production
-   Resend domain verification, Vercel deploy.
+6. ✅ Vercel deploy is live and verified, rate limiting is done, and the
+   Resend production domain is verified — `NEXT_PUBLIC_APP_URL` and
+   `RESEND_FROM_EMAIL` now point at `simpleroost.com` in production (see
+   below). Nothing known to be blocking left in this phase.
+
+**Vercel deploy is live**, `https://maintenanceapp-six.vercel.app`
+(project `jeffrey-chang/maintenanceapp`; the first import/deploy from a
+prior session had already succeeded via the Vercel web UI by the time this
+session picked it up). Finished in a later session with no local Vercel
+plugin MCP available (it requires an OAuth flow that can't run in a
+non-interactive session) — used the raw `vercel` CLI instead, invoked via
+`npx vercel@latest` since a global `npm i -g vercel` hit `EACCES` (no sudo
+in this environment). `vercel login <email>` prints a
+`https://vercel.com/oauth/device?user_code=...` URL — pasting that in chat
+for the user to open/confirm is enough, no browser control needed on this
+end. `vercel link --yes --project maintenanceapp` linked this checkout to
+the existing project (writes a fresh `VERCEL_OIDC_TOKEN` into `.env.local`,
+harmless/gitignored).
+
+Two known-bad env vars (see prior paragraph history) were confirmed bad
+exactly as predicted, then fixed and redeployed:
+- `NEXT_PUBLIC_APP_URL` had pasted in as `http://localhost:3000` — replaced
+  with the real `https://maintenanceapp-six.vercel.app` via
+  `vercel env rm/add ... production`.
+- `STRIPE_WEBHOOK_SECRET` was still the local `stripe listen` CLI secret —
+  replaced with a real webhook endpoint's secret, created directly via the
+  Stripe API (`POST /v1/webhook_endpoints`, using the test-mode
+  `STRIPE_SECRET_KEY` already in `.env.local`) pointed at
+  `https://maintenanceapp-six.vercel.app/api/stripe/webhook`, subscribed to
+  the same 5 events already coded for (see the billing section below).
+  Endpoint id `we_1U4b3wPQVF1eQR3XcViJFXI1`, test mode.
+
+Redeployed with `vercel deploy --prod` after the env var fixes (re-aliases
+to the same stable `maintenanceapp-six.vercel.app` URL automatically).
+Verified live end-to-end, not just "build succeeded": logged into
+production as the test landlord account through an actual browser session
+and confirmed real property/tenant/request data renders correctly, and
+fired a real Stripe test event (`stripe trigger checkout.session.completed`
+via the CLI at `~/bin/stripe`, from the earlier session's local setup) at
+the new webhook endpoint, then confirmed via `vercel logs` that
+`POST /api/stripe/webhook` was received and returned success with no
+errors — the signature verification and Supabase writes are working
+against real production env vars, not just the route being reachable.
 
 ### UI/UX redesign pass (post-Phase-5, done in a later session)
 
@@ -977,6 +1018,378 @@ Chrome's omnibox/menu install option, Safari's manual Share → Add to Home
 Screen) — a custom in-app install prompt is a separate, optional UX layer
 on top of what's here, not required for basic installability, and wasn't
 asked for.
+
+### Rate limiting (Upstash Redis, later session)
+
+Provisioned **Upstash for Redis** via the Vercel Marketplace
+(`vercel integration add upstash/upstash-kv --non-interactive` — needed a
+one-time browser step to accept Upstash's marketplace terms first). Env
+vars (`KV_REST_API_URL`/`KV_REST_API_TOKEN`) auto-injected into
+Development/Preview/Production; `@upstash/redis`'s `Redis.fromEnv()`
+already falls back to those exact names, so no manual wiring needed.
+New `lib/rateLimit.ts` exports two sliding-window limiters
+(`@upstash/ratelimit`):
+- `notificationsProcessLimiter` (30/1min by IP) on
+  `app/api/notifications/process/route.ts` — this route has no auth check
+  by design (fire-and-forget client nudges after a mutation) and runs with
+  the service-role key, so it was the clearest unthrottled-abuse surface.
+- `inviteLimiter` (20/1hr by landlord id) on `createInvite` in
+  `app/(landlord)/properties/actions.ts` — caps real Resend email sends to
+  an address the landlord types in.
+
+Maintenance request creation is a third throttled surface, but it's
+enforced at the **DB level** instead
+(`supabase/migrations/20260815064000_rate_limit_maintenance_request_creation.sql`,
+inline `select count(*)` + `raise exception` inside the
+`create_maintenance_request` RPC, 20/rolling-hour per tenant) — that path
+is called directly from the browser (`supabase.rpc(...)`, no Next.js
+server action in between), so Upstash (only reachable from server code)
+can't intercept it. This same "client calls Postgres directly, so
+enforcement has to live in Postgres" pattern recurs for chat messages
+below.
+
+Verified live in production: 31 rapid `POST /api/notifications/process`
+requests returned `200` until the limit, then `429`.
+
+### Custom domain: simpleroost.com (later session)
+
+App is rebranded and now live at **`https://simpleroost.com`**
+(`www.simpleroost.com` also live, same Vercel project, both with valid
+SSL) — the original `maintenanceapp-six.vercel.app` still works too,
+Vercel doesn't remove old deployment aliases.
+
+- Domain purchased on Namecheap. DNS stayed on Namecheap (Custom DNS /
+  "Mail Settings → Custom MX", not delegated to Vercel's nameservers) —
+  simpler than migrating everything, and avoids re-adding the Resend
+  records (below) inside a different DNS provider.
+- Added to the Vercel project via `vercel domains add simpleroost.com
+  maintenanceapp` (+ `www.` as a second domain) — recommended DNS: two
+  plain **A records** (`@` and `www`, both → `76.76.21.21`), not CNAME.
+  SSL issues automatically a few minutes after the A record resolves.
+- **Resend domain verification cleared on its own** (checked via
+  `GET https://api.resend.com/domains` — `simpleroost.com`, id
+  `e51fe858-363a-482d-8209-c52293fbf7e7`, now `"status":"verified"`) after
+  being stuck on `pending` for DKIM/SPF for an extended period (see prior
+  paragraph history in git blame for the full stuck-state investigation —
+  DNS was independently confirmed correct throughout; this looks to have
+  been resolved entirely on Resend's platform side, nothing changed on the
+  DNS/app side to unstick it).
+- `NEXT_PUBLIC_APP_URL` and `RESEND_FROM_EMAIL` production env vars have
+  been moved off the Vercel `.vercel.app` URL now that verification
+  cleared: `NEXT_PUBLIC_APP_URL=https://simpleroost.com`,
+  `RESEND_FROM_EMAIL=notifications@simpleroost.com` (removed + re-added via
+  `vercel env rm/add ... production`, then `vercel deploy --prod` to pick
+  them up — same pattern as the earlier env var fixes in the Vercel-deploy
+  section above). Verified live: `simpleroost.com` still resolves/aliases
+  correctly and the dashboard renders with existing session data intact
+  post-redeploy. Did not send a real test email as part of this
+  verification (Resend's own `"status":"verified"` on the domain is the
+  authoritative signal that sending from any `@simpleroost.com` address
+  will work) — worth a real end-to-end send (e.g. trigger a tenant invite)
+  next time email is touched, just to see a real message land.
+- The three DNS records Resend needs (already live on Namecheap): DKIM
+  TXT at `resend._domainkey`, SPF MX at `send` (→
+  `feedback-smtp.us-east-1.amazonses.com`, priority 10), SPF TXT at `send`
+  (`v=spf1 include:amazonses.com ~all`). Namecheap only shows a bare "MX
+  Record" option in its Add Record type dropdown after "Mail Settings" is
+  switched from the default to "Custom MX" — otherwise it silently
+  manages MX itself and the option doesn't appear.
+
+### Branding: "SimpleRoost" (later session)
+
+Renamed the app from the placeholder "Home Maintenance" to **SimpleRoost**
+(landlord-appeal naming exercise — short, no "landlord"/"tenant" baked
+into the literal brand since both roles see it, memorable, `.com`
+available — see the domain purchase above).
+- **Nav bar wordmark**: new `components/layout/Logo.tsx`, plain text (no
+  icon — a bird-in-circle logo mark was explored and mocked up but the
+  user asked for text-only in the nav), rendered top-left in both
+  `TenantNavBar.tsx` and `LandlordNavBar.tsx` (both changed their header
+  from `justify-end` to `justify-between` to make room), linking to
+  `/home` (tenant) or `/dashboard` (landlord). Styled as two spans —
+  `"Simple"` in `font-serif italic`, `"Roost"` in `font-sans font-bold` —
+  deliberately mismatched fonts per the user's explicit ask to visually
+  distinguish the two halves of the compound name.
+- **Browser tab title + PWA manifest name**: `app/layout.tsx`'s
+  `metadata.title`/`appleWebApp.title` and `app/manifest.ts`'s
+  `name`/`short_name` all changed from `"Home Maintenance"`/`"Maintenance"`
+  to `"SimpleRoost"` — these were the only two hardcoded spots (confirmed
+  via repo-wide grep for the old name after the change, zero hits left).
+
+### PropertyTile hover-tint bug fix (later session)
+
+A landlord dashboard tile with a **plain green left bar and no status
+badge** (an occupied property with no open/in-progress request, and no
+`done` request within the 24h "Complete" window either) didn't light up
+on hover/tap, unlike every red/amber/genuinely-`done`-badged tile.
+Root cause in `components/properties/PropertyTile.tsx`: the left bar's
+color and the hover-tint lookup (`statusInteractiveClass` in
+`lib/statusRank.ts`) used to be computed separately — the bar fell back to
+green whenever `badgeStatus` wasn't `"open"`/`"in_progress"` (including
+`null`), but the tint lookup passed raw `badgeStatus` straight through,
+and `statusInteractiveClass(null, ...)` has nothing to match so it
+silently returns no tint at all. Fixed by computing a single `tone`
+variable once (mirroring the bar's exact fallback-to-green logic) and
+feeding *that* into both the bar color and the tint lookup, so they can
+never disagree again. Verified live: hovering a plain-green tile now
+tints green exactly like the other status colors already did.
+
+### Tier rename + monthly chat-message caps (later session)
+
+Subscription tiers renamed for display only: **Basic** (was "1-3 units")
+and **Premium** (was "4-10 units") — `lib/stripe/plans.ts`'s
+`PLAN_LABELS` values changed, `app/(landlord)/billing/page.tsx` now reads
+from `PLAN_LABELS` instead of its own hardcoded ternaries, and
+`UpgradeCelebrationModal.tsx`'s stray "Professional Tier" copy fixed to
+say "Premium". The underlying `tier` union values (`"tier_1_3"`/
+`"tier_4_10"`), Stripe price env var names, and the `subscriptions.tier`
+check constraint are all unchanged — purely a label swap, no migration
+needed for it.
+
+**New monthly chat-message caps, tied to tier** — protects margins against
+unbounded notification volume, since every `request_messages` insert
+triggers a real Resend/push send via `triggerNotificationProcessing()`.
+Basic: 350 messages/month + a 50-message emergency buffer (400 hard
+stop). Premium: 1000/month, with a **$5 one-time purchase for 200 more**
+once over (stackable, no cap on repeat purchases). A "message" is every
+row in `request_messages` — landlord's and tenant's combined, across all
+of a landlord's threads — resetting on the **calendar month** (1st of
+every month for everyone, not per-landlord billing-cycle anniversaries).
+Trial-only landlords (no real Stripe subscription yet) are capped too,
+using the tier their live unit count would imply (same mapping as
+`determineTier()`) — no unlimited-messaging loophole during the trial.
+
+**Enforcement lives entirely in Postgres**, same reasoning as the
+maintenance-request rate limit above: both `RequestConversation.tsx`
+(landlord) and `MessageThread.tsx` (tenant) insert
+directly via `supabase.from("request_messages").insert(...)`, no server
+action in the path. Two new migrations:
+- `20260816090000_message_usage_schema.sql` — `public.message_usage`
+  (one row per landlord per calendar month, `message_count` +
+  `bundle_messages_purchased`, incrementally maintained — not computed by
+  scanning history, since `request_messages` has no `landlord_id` of its
+  own) and `public.message_bundle_purchases` (append-only ledger, exists
+  purely so the Stripe webhook can be idempotent on the $5 purchase — a
+  replayed `checkout.session.completed` fails the unique constraint on
+  `stripe_checkout_session_id` instead of double-crediting).
+- `20260816090100_message_cap_trigger_and_rpc.sql` — `effective_message_cap()`
+  (shared helper: resolves a landlord's tier, falling back to unit-count
+  for trial-only landlords, and computes `base_cap`/`buffer_cap`/
+  `bundle_cap`/`effective_cap`), a `BEFORE INSERT` trigger
+  `enforce_message_cap` on `request_messages` that increments/checks a
+  `message_usage` row and `raise exception 'message_cap_exceeded'` once
+  over, and `get_message_usage()` (an `auth.uid()`-scoped RPC the UI
+  reads from, so displayed numbers can never drift from what's actually
+  enforced — both read the same `effective_message_cap()`). **A brand-new
+  request's opening message is always exempted** (the trigger checks `not
+  exists (select 1 from request_messages where request_id = new.request_id)`
+  and allows it unconditionally) — otherwise a fully-capped landlord would
+  make it look like tenants can't report anything at all; only the
+  landlord's reply and everything after is subject to the cap.
+
+**Client-side wiring**: `error.message.includes("message_cap_exceeded")`
+in both chat components' `handleSend` (same string-matching precedent as
+`StatusControls.tsx`'s existing `subscription_required` check) sets a
+`blocked` state that swaps the send form for an inline notice. The
+landlord's request-detail page additionally fetches `get_message_usage()`
+server-side and passes `initialBlocked` into `RequestConversation` so the
+input is pre-disabled on page load, not just after a wasted submit —
+tenants don't get this proactive check (RLS restricts `message_usage`/
+`get_message_usage()` to the landlord, an intentional asymmetry), only the
+reactive one, with neutral copy that doesn't expose the landlord's
+billing state ("Your landlord has reached their monthly message limit").
+
+**UI surfaces**:
+- `components/billing/MessageUsageBanner.tsx` — persistent, account-wide
+  (rendered in `app/(landlord)/layout.tsx` next to the existing
+  `TrialBanner`), red when fully blocked, amber when in the
+  buffer/purchased-extra zone. The amber copy is **tier-aware** — Basic
+  says "using your emergency buffer", Premium says "using your purchased
+  extra messages" (a real bug caught during live testing: the generic
+  copy said "emergency buffer" even for Premium, which has no buffer
+  concept — Premium's overage protection is the $5 bundle, not a buffer).
+- `components/billing/MessageCapWarningPopup.tsx` — a one-time modal
+  popup that fires at **80% of the base cap** (280/350 Basic, 800/1000
+  Premium), exact copy: "Your account has used 80% of its monthly
+  maintenance texts. No action is needed right now, but you can track
+  usage in your dashboard." Only fires before the harder buffer/blocked
+  states (a "no action needed" message would be misleading once actually
+  restricted). Dismissal remembered via `localStorage` keyed by calendar
+  month (`message_cap_warning_dismissed_<period>`) — simplest way to make
+  it "once a month" without new DB schema just for a seen-flag.
+- `components/billing/MessageUsageBar.tsx` — visual bar on the
+  **Settings page** (`app/settings/page.tsx`, landlord-only section,
+  titled "Monthly maintenance message allowance"), green below 60% of
+  base cap, amber 60–80%, red 80%+ (matching the popup's own threshold).
+  Same page shows `MessageCapUpgradeButton` once blocked — a real
+  permanent prorated upgrade to Premium for Basic (reuses the existing
+  `UnitUpgradeModal` unchanged, since it was already generic on
+  `targetTier`/`interval`/`amountDueCents`), or the $5/200-message buy
+  button for Premium.
+- **Basic→Premium upgrade-on-cap** (`lib/billing/messageLimit.ts`,
+  `checkMessageCapUpgrade`/`applyConfirmedMessageCapUpgrade`) mirrors
+  `lib/billing/unitLimit.ts`'s exact "preview a real Stripe-computed
+  prorated cost via `stripe.invoices.createPreview` → user confirms →
+  `applyTierChange`" shape, just triggered by message volume instead of
+  unit count. This is a genuine, permanent tier change (stays Premium
+  going forward), not a one-cycle reversion — same mechanics already
+  proven live for the unit-count upgrade flow.
+
+**New one-time (non-subscription) Stripe payment** — the app's first,
+previously only `mode: "subscription"` Checkout existed. New
+`lib/billing/messageBundle.ts`'s `createMessageBundleCheckoutSession`
+uses `mode: "payment"` with inline `price_data` (no pre-created Stripe
+Price/env var, since it's a fixed ad hoc $5 item), metadata
+`{ landlord_id, kind: "message_bundle", bundle_message_count }`. Webhook
+branch added to `handleCheckoutSessionCompleted` in
+`lib/billing/webhookHandlers.ts` (checks `session.mode === "payment" &&
+session.metadata?.kind === "message_bundle"` before falling through to
+the existing subscription-only logic) → `handleMessageBundlePurchase`
+credits `message_usage.bundle_messages_purchased` only after a successful
+(non-conflicting) insert into `message_bundle_purchases`.
+
+**Verified live against the real Stripe test account, full loop**:
+manually pushed a test landlord's `message_usage` to 65%/85%/100% via
+direct DB writes to check the bar colors and the 80% popup (both fired
+correctly, popup didn't reappear after dismissal), confirmed the
+persistent blocked banner and pre-disabled chat input at 100%, then ran
+an actual test-mode Stripe Checkout purchase (`4242 4242 4242 4242`) for
+the $5 bundle — required starting `stripe listen --forward-to
+localhost:3000/api/stripe/webhook` locally first (a purchase attempt
+before the forwarder was running completed on Stripe's side but never
+reached the local webhook route, confirming forwarding — not app logic —
+was the gap). With the forwarder running, the webhook delivered, credited
+exactly once (confirmed via the `message_bundle_purchases` ledger, one
+row, matching the unique-constraint idempotency design), the bar updated
+to reflect the +200 purchased messages, the blocked state cleared, and a
+real chat message sent successfully immediately after. All test data
+(`message_usage`, `message_bundle_purchases`, the test chat message)
+cleaned up afterward.
+
+### Billing page feature lists + polish (later session)
+
+Each pricing card on `/billing` now shows a bullet feature list (with a
+Tabler check icon per line) between the plan's quote and its price —
+`planFeatures(tier)` in `lib/stripe/plans.ts`, card order is Name → Price
+→ Quote → Features → Subscribe buttons. The message-cap number in the
+list (`350`/`1,000`) is interpolated from a new exported
+`BASE_MESSAGE_CAP: Record<Tier, number>` constant rather than hardcoded
+text, so it can't silently drift from what the SQL trigger actually
+enforces — the constant's comment says exactly which migration to keep it
+in sync with. Also: `Logo.tsx` got a small `mr-0.5` gap between "Simple"
+and "Roost" (deliberately less than a full space).
+
+### New-request back-button fix (later session)
+
+After a tenant submits a new request, `NewRequestForm.tsx` used
+`router.push()` to the new request's detail page — this stacks the detail
+page on top of the (now-empty, stale) form in browser history, so
+pressing back landed a tenant back on the form instead of home. Changed
+to `router.replace()`, which swaps out the form's history entry instead
+of stacking on it, so back correctly goes to wherever the tenant came
+from (home). Verified live: submit → detail page → back → lands on home,
+not the form.
+
+### Dashboard "Multiple requests" property state (later session)
+
+Root-caused two things the user thought were bugs and turned out not to
+be, while building this: (1) a "picture goes blank" report traced to a
+single leftover **raw, unconverted `.HEIC` attachment** from a session
+before this app's automatic HEIC→JPEG/WebP conversion existed — browsers
+other than Safari/WebKit can't decode HEIC at all, so it was broken
+before the status change and unrelated to it. (2) a "status doesn't
+update" report traced to a property having **several other requests still
+sitting in `open` status** from old test sessions — the dashboard tile
+correctly stays red whenever *any* request on a property is open,
+regardless of what happens to one specific other request. Both were
+leftover test-data debris (deleted, along with their Storage objects, via
+the service-role client — see the cleanup pattern below) rather than app
+bugs, but investigating them surfaced a real, previously-unhandled case:
+a property with multiple simultaneously-active requests had no dedicated
+treatment, just whichever single request happened to be picked as
+"relevant."
+
+New **"Multiple requests" property state** (blue) on the landlord
+dashboard, added properly this time:
+- `badgeStatus` (`DashboardPropertyList.tsx`, `PropertyTile.tsx`) gained a
+  fourth value alongside `open`/`in_progress`/`done`: `"multiple"`. Left
+  bar and hover/select tint are blue (`lib/statusRank.ts`'s
+  `INTERACTIVE_TINT.multiple`), ranked as the single most urgent tier
+  (above plain `open`) in the dashboard's sort order.
+- **Sticky, not live-computed** — this was a specific, deliberate choice
+  confirmed with the user over live-count-based alternatives: once a
+  property has 2+ requests needing attention at the same time, it stays
+  "Multiple requests" even as they're resolved one by one, only clearing
+  once *every* request from that wave is done. A lone remaining request
+  still counts as part of a wave if some other request on the property
+  was marked done *after* this one was created (i.e. they were genuinely
+  open together at some point, not just two unrelated issues months
+  apart). This needed widening the done-transition query
+  (`request_status_history`, `to_status = 'done'`) in both
+  `app/(landlord)/dashboard/page.tsx` and `DashboardPropertyList.tsx`'s
+  client re-fetch from a 24h window to unbounded — the existing `doneAt`
+  map already supported this shape (it's keyed by request id →
+  done-timestamp), the 24h check for the separate "Complete" pill logic
+  is just applied at the point of use instead of baked into the query.
+- **Category icon row**: one icon per distinct category among the
+  property's currently-active (non-done) requests, with a small `×N`
+  suffix only when more than one active request shares that category —
+  two Kitchen issues show one fork icon with `×2`; a lone Bathroom issue
+  just shows its icon, no text labels anywhere in this row. This is
+  deliberately based on *current* need, separate from the sticky badge
+  text above — after 2 of 3 requests resolve, the icon row can shrink to
+  just the one remaining category while the badge still says "Multiple
+  requests".
+- **Expanded dropdown** shows every request in the current wave (title,
+  its own `StatusBadge` — "Maintenance required"/"In progress"/"Complete"
+  — category, time, description, Details link), separated by a divider
+  line (`divide-y`) between entries, when badgeStatus is `"multiple"` —
+  reuses the same row shape as the existing single-request preview, just
+  with a per-row status badge added. This list is `waveRequests`
+  (`DashboardPropertyList.tsx`), not just `nonDoneRequests` — it
+  deliberately includes the qualifying already-done siblings too (the
+  same ones keeping the sticky "Multiple requests" state alive), so a
+  landlord can see the full picture of what happened, not just what's
+  still outstanding. `categorySummary`'s icon row stays based on
+  `nonDoneRequests` only, unaffected — current-need icons vs.
+  full-wave-history dropdown are deliberately different scopes.
+- Verified live with a controlled 3-request scenario (2 Kitchen + 1
+  Bathroom on one property): confirmed the icon grouping/count, the full
+  dropdown list, that marking one request in-progress kept the blue state
+  and correct icons, that resolving 2 of 3 (leaving only the Bathroom one
+  active) correctly *stayed* "Multiple requests" per the sticky rule
+  instead of falling back to plain red/amber, and that resolving the
+  final one flipped the tile to green "Complete" as normal. Separately
+  verified the per-row status badges + dividers with a mixed-status
+  scenario (one open, one in-progress, one done-and-still-in-wave) —
+  confirmed each row showed the correct color/label
+  (red/amber/green) and a visible divider line between every pair of
+  rows.
+
+**Multi-row dropdown extended to the all-done case too.** Once every
+request in a wave is marked complete, the tile itself reverts to the
+plain single-request green "Complete" pill (not "Multiple requests" —
+that text is specifically for the still-active state), but the dropdown
+still lists every request that was part of the wave, each with its own
+"Complete" `StatusBadge` and a divider between rows — not just one. In
+`DashboardPropertyList.tsx`, `recentlyDoneRequests` (plural, replacing
+the old single `recentlyDone`) filters ALL done requests within the
+existing 24h `doneAt` window, and `waveRequests`/`dropdownRequests` is
+populated from it whenever there are 2+ (for exactly 1 — the ordinary
+single-request case — it stays `null` and `PropertyTile` falls back to
+its plain single-preview block unchanged, so nothing regressed there).
+`PropertyTile`'s dropdown condition changed from `badgeStatus ===
+"multiple" && waveRequests` to just `waveRequests` (truthy check alone),
+since the same multi-row list is now correct for both the active-wave
+and finished-wave cases. The 24h expiry itself needed no new code — it's
+the same `doneAt`-window filter already driving the single-request
+Complete pill, just now also gating the list's population; once every
+member ages past 24h, `recentlyDoneRequests` empties, `badgeStatus` falls
+through to `null`, and the tile reverts to a plain green bar with "No
+requests yet." — pre-existing behavior, unchanged. Verified live: two
+requests marked complete on one property showed the plain green
+"Complete" tile with both listed (individually badged, divided) in the
+dropdown.
 
 ## Environment setup (`.env.local`, gitignored — not in this repo)
 

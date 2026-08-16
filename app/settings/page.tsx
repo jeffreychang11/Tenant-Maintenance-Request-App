@@ -1,15 +1,19 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getPrimaryLandlordContact } from "@/lib/landlord";
+import { getMessageUsage } from "@/lib/billing/messageLimit";
 import { LandlordNavBar } from "@/components/layout/LandlordNavBar";
 import { TenantNavBar } from "@/components/layout/TenantNavBar";
 import { PushToggle } from "@/components/settings/PushToggle";
+import { MessageUsageBar } from "@/components/billing/MessageUsageBar";
+import { MessageCapUpgradeButton } from "@/components/billing/MessageCapUpgradeButton";
 
 export default async function SettingsPage() {
   const { user, profile } = await requireProfile();
   const role = profile.role as "landlord" | "tenant";
   const supabase = await createClient();
   const landlordContact = role === "tenant" ? await getPrimaryLandlordContact(supabase, user.id) : null;
+  const usage = role === "landlord" ? await getMessageUsage(supabase) : null;
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
@@ -39,6 +43,13 @@ export default async function SettingsPage() {
               </dd>
             </div>
           </dl>
+
+          {usage?.tier && (
+            <div className="mt-8">
+              <MessageUsageBar usage={usage} />
+              {usage.blocked && <MessageCapUpgradeButton tier={usage.tier} />}
+            </div>
+          )}
 
           <h2 className="mt-8 text-lg font-medium">Notifications</h2>
           <div className="mt-3">

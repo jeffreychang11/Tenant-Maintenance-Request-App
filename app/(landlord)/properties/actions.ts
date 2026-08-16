@@ -9,6 +9,7 @@ import { sendInviteEmail } from "@/lib/email/resend";
 import { requireActiveSubscription } from "@/lib/billing/guard";
 import { syncPlanForUnitCount } from "@/lib/billing/syncPlan";
 import { checkUnitLimit, applyConfirmedUpgrade, type UnitLimitResult } from "@/lib/billing/unitLimit";
+import { inviteLimiter } from "@/lib/rateLimit";
 
 // Read by UpgradeCelebrationModal in the landlord layout on the very next
 // render, then left to expire on its own (Server Components can't clear a
@@ -147,6 +148,9 @@ export async function createInvite(propertyId: string, unitId: string, formData:
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   await requireActiveSubscription(user.id);
+
+  const { success } = await inviteLimiter.limit(user.id);
+  if (!success) throw new Error("Too many invites sent recently — try again in a bit.");
 
   const email = (formData.get("email") as string)?.trim().toLowerCase();
   if (!email) throw new Error("Email is required");

@@ -14,10 +14,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Home Maintenance",
+  title: "SimpleRoost",
   description: "Submit and track home maintenance requests with your landlord.",
   appleWebApp: {
-    title: "Home Maintenance",
+    title: "SimpleRoost",
     statusBarStyle: "default",
   },
   // Older iOS versions look for this exact key even though `appleWebApp`

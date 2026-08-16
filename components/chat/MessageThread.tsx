@@ -24,6 +24,7 @@ export function MessageThread({
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
+  const [blocked, setBlocked] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Subscribes regardless of whether a reply exists yet, so the chatbox can
@@ -71,7 +72,7 @@ export function MessageThread({
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
-    if (!body.trim()) return;
+    if (!body.trim() || blocked) return;
     setSending(true);
     const supabase = createClient();
     const { error } = await supabase.from("request_messages").insert({
@@ -82,6 +83,8 @@ export function MessageThread({
     if (!error) {
       setBody("");
       triggerNotificationProcessing();
+    } else if (error.message.includes("message_cap_exceeded")) {
+      setBlocked(true);
     }
     setSending(false);
   }
@@ -116,21 +119,28 @@ export function MessageThread({
         })}
         <div ref={bottomRef} />
       </div>
-      <form onSubmit={handleSend} className="mt-3 flex gap-2">
-        <input
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder="Write a reply..."
-          className="flex-1 rounded-md border border-black/10 px-3 py-2 text-sm dark:border-white/20 dark:bg-black"
-        />
-        <button
-          type="submit"
-          disabled={sending}
-          className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
-        >
-          Send
-        </button>
-      </form>
+      {blocked ? (
+        <p className="mt-3 text-sm text-red-700 dark:text-red-400">
+          Your landlord has reached their monthly message limit. New messages can&apos;t be sent
+          right now — try again later.
+        </p>
+      ) : (
+        <form onSubmit={handleSend} className="mt-3 flex gap-2">
+          <input
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder="Write a reply..."
+            className="flex-1 rounded-md border border-black/10 px-3 py-2 text-sm dark:border-white/20 dark:bg-black"
+          />
+          <button
+            type="submit"
+            disabled={sending}
+            className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+          >
+            Send
+          </button>
+        </form>
+      )}
     </div>
   );
 }

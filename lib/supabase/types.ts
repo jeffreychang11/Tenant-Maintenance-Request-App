@@ -106,6 +106,79 @@ export type Database = {
           },
         ]
       }
+      message_bundle_purchases: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          id: string
+          landlord_id: string
+          message_count: number
+          period_month: string
+          stripe_checkout_session_id: string
+        }
+        Insert: {
+          amount_cents?: number
+          created_at?: string
+          id?: string
+          landlord_id: string
+          message_count?: number
+          period_month: string
+          stripe_checkout_session_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          id?: string
+          landlord_id?: string
+          message_count?: number
+          period_month?: string
+          stripe_checkout_session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_bundle_purchases_landlord_id_fkey"
+            columns: ["landlord_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_usage: {
+        Row: {
+          bundle_messages_purchased: number
+          created_at: string
+          landlord_id: string
+          message_count: number
+          period_month: string
+          updated_at: string
+        }
+        Insert: {
+          bundle_messages_purchased?: number
+          created_at?: string
+          landlord_id: string
+          message_count?: number
+          period_month: string
+          updated_at?: string
+        }
+        Update: {
+          bundle_messages_purchased?: number
+          created_at?: string
+          landlord_id?: string
+          message_count?: number
+          period_month?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_usage_landlord_id_fkey"
+            columns: ["landlord_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_events: {
         Row: {
           actor_id: string | null
@@ -664,6 +737,16 @@ export type Database = {
         }[]
       }
       delete_property: { Args: { p_property_id: string }; Returns: undefined }
+      effective_message_cap: {
+        Args: { p_landlord_id: string }
+        Returns: {
+          base_cap: number
+          buffer_cap: number
+          bundle_cap: number
+          effective_cap: number
+          tier: string
+        }[]
+      }
       get_invite_by_token: {
         Args: { p_token: string }
         Returns: {
@@ -681,6 +764,20 @@ export type Database = {
         Returns: {
           email: string
           full_name: string
+        }[]
+      }
+      get_message_usage: {
+        Args: never
+        Returns: {
+          base_cap: number
+          blocked: boolean
+          buffer_cap: number
+          bundle_cap: number
+          effective_cap: number
+          in_buffer_zone: boolean
+          messages_used: number
+          period_month: string
+          tier: string
         }[]
       }
       get_tenant_contact: {

@@ -120,7 +120,11 @@ export function NewRequestForm({
     }
 
     triggerNotificationProcessing();
-    router.push(`/my-requests/${requestId}`);
+    // replace, not push — the new-request form shouldn't sit in history
+    // between the submitted request and wherever the tenant came from, so
+    // pressing back from the request detail page goes straight to home
+    // instead of back to the (now stale) empty form.
+    router.replace(`/my-requests/${requestId}`);
     router.refresh();
   }
 

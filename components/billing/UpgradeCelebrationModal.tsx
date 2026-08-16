@@ -25,7 +25,7 @@ export function UpgradeCelebrationModal({ show }: { show: boolean }) {
       >
         <p className="text-lg font-medium">🎉 Looks like your business is growing!</p>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          Upgrade to our Professional Tier for up to 10 units.
+          Upgrade to Premium for up to 10 units.
         </p>
         <div className="mt-5 flex justify-center gap-2">
           <Link

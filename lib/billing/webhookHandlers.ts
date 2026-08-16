@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe/client";
 import { tierAndIntervalForPriceId } from "@/lib/stripe/plans";
 import { syncPlanForUnitCount } from "@/lib/billing/syncPlan";
+import { handleMessageBundlePurchase } from "@/lib/billing/messageBundle";
 
 function periodEndOf(sub: Stripe.Subscription): string | null {
   const item = sub.items.data[0];
@@ -45,6 +46,9 @@ async function syncFromSubscriptionId(subscriptionId: string) {
 }
 
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+  if (session.mode === "payment" && session.metadata?.kind === "message_bundle") {
+    return handleMessageBundlePurchase(session);
+  }
   if (session.mode !== "subscription" || !session.subscription) return;
   const landlordId = session.client_reference_id;
   if (!landlordId || !stripe) return;
