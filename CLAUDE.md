@@ -1412,18 +1412,41 @@ and renders that row's own category icon immediately to the left of its
 line below — applies to both the active-wave and finished-wave dropdown
 lists, since they share the same row markup.
 
-**Dropdown pill buttons invert to solid black on hover/tap (later
-session).** The plain white/outlined "Details" and "Add tenant" buttons
-inside `PropertyTile.tsx`'s expanded dropdown had no visual affordance
-that they were tappable/clickable at rest — nothing distinguished them
-from plain text until you were already on top of one. All three instances
+**Dropdown pill buttons give hover/tap feedback (later session).** The
+plain white/outlined "Details" and "Add tenant" buttons inside
+`PropertyTile.tsx`'s expanded dropdown had no visual affordance that they
+were tappable/clickable at rest — nothing distinguished them from plain
+text until you were already on top of one. All three instances
 (vacant-property "Add tenant", per-row "Details" in the multi-row wave
 list, single-request "Details") now share one `pillButtonClass` constant
-with `hover:bg-black hover:text-white` (+ dark-mode equivalents) and the
-same on `active:`, so a mouse hover previews it and a mobile tap gets the
-same solid-black feedback via `:active` (no JS touch handling needed,
-unlike the tile row's own hover-tint mechanism above — these are plain
-navigating links, not toggle buttons, so CSS `:active` alone is enough). (`.env.local`, gitignored — not in this repo)
+with `hover:bg-black hover:text-white` and the same on `active:`, so a
+mouse hover previews it and a mobile tap gets the same feedback via
+`:active` (no JS touch handling needed, unlike the tile row's own
+hover-tint mechanism above — these are plain navigating links, not toggle
+buttons, so CSS `:active` alone is enough). **First shipped black, then
+changed to silver** (`hover:bg-[#C0C0C0] hover:text-black`, same in both
+themes, so the `dark:hover:*` variants were dropped — silver is light
+either way and needs the same dark text) per explicit follow-up feedback.
+
+**A production deploy briefly served stale CSS after this shipped** — a
+plain `vercel deploy --prod` reused Vercel's remote build cache, and the
+cached Tailwind build hadn't picked up the new `hover:bg-black`/
+`hover:text-white`/`active:*` utility classes even though a clean local
+`npm run build` had them from the start (confirmed by diffing the actual
+compiled CSS between a local build and the live production bundle via
+curl). Fixed by `vercel deploy --prod --force`, which forces a fresh
+remote build bypassing that cache — worth reaching for again if a styling
+change looks correct locally but doesn't show up live. (A `--prebuilt`
+deploy using a local `vercel build` was tried first as an alternative fix
+but doesn't work in this repo: `vercel build` can only pull sensitive env
+vars as a masked `[SENSITIVE]` placeholder, which broke the build on
+`VAPID_SUBJECT` not being a real URL.)
+
+**Billing moved to third in the landlord hamburger menu**
+(`LandlordNavBar.tsx`), between Manage Properties and Support — was
+previously last before the sign-out divider.
+
+## Environment setup
 
 Copy `.env.local.example` and fill in:
 - Supabase: project URL + anon key + service_role key from

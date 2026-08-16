@@ -61,6 +61,13 @@ export function LandlordNavBar() {
             Manage Properties
           </Link>
           <Link
+            href="/billing"
+            onClick={() => setOpen(false)}
+            className="rounded-md px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10"
+          >
+            Billing
+          </Link>
+          <Link
             href="/support"
             onClick={() => setOpen(false)}
             className="rounded-md px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10"
@@ -73,13 +80,6 @@ export function LandlordNavBar() {
             className="rounded-md px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10"
           >
             Settings
-          </Link>
-          <Link
-            href="/billing"
-            onClick={() => setOpen(false)}
-            className="rounded-md px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10"
-          >
-            Billing
           </Link>
           <div className="my-1 border-t border-black/10 dark:border-white/10" />
           <button

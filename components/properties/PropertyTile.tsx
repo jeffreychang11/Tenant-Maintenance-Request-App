@@ -78,11 +78,12 @@ export function PropertyTile({
   const rowTint = statusInteractiveClass(tone, open);
 
   // Shared look for every plain white pill button inside the dropdown
-  // (Details, Add tenant) — inverts to solid black on hover, and on
-  // :active too so a tap gives the same feedback on mobile, where there's
-  // no hover state to reveal it's tappable otherwise.
+  // (Details, Add tenant) — turns silver on hover, and on :active too so
+  // a tap gives the same feedback on mobile, where there's no hover state
+  // to reveal it's tappable otherwise. Text forced to black on the silver
+  // fill since it's light in both themes, unlike the border it sits on.
   const pillButtonClass =
-    "self-start rounded-full border border-black/10 px-3 py-1.5 text-xs font-medium transition-colors hover:bg-black hover:text-white active:bg-black active:text-white dark:border-white/20 dark:hover:bg-white dark:hover:text-black dark:active:bg-white dark:active:text-black";
+    "self-start rounded-full border border-black/10 px-3 py-1.5 text-xs font-medium transition-colors hover:bg-[#C0C0C0] hover:text-black active:bg-[#C0C0C0] active:text-black dark:border-white/20";
 
   return (
     <li
