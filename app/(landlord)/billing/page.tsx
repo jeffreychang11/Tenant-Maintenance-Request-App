@@ -6,6 +6,7 @@ import {
   countUnitsForLandlord,
   getSubscriptionForLandlord,
 } from "@/lib/billing/subscription";
+import { getMessageUsage } from "@/lib/billing/messageLimit";
 import { IconCheck } from "@tabler/icons-react";
 import {
   PLAN_LABELS,
@@ -16,6 +17,8 @@ import {
   planFeatures,
 } from "@/lib/stripe/plans";
 import { createCheckoutSession, createPortalSession } from "@/app/(landlord)/billing/actions";
+import { MessageUsageBar } from "@/components/billing/MessageUsageBar";
+import { MessageCapUpgradeButton } from "@/components/billing/MessageCapUpgradeButton";
 
 export default async function BillingPage({
   searchParams,
@@ -26,9 +29,10 @@ export default async function BillingPage({
   const { locked: lockedParam, success, welcome } = await searchParams;
   const supabase = await createClient();
 
-  const [sub, unitCount] = await Promise.all([
+  const [sub, unitCount, usage] = await Promise.all([
     getSubscriptionForLandlord(supabase, user.id),
     countUnitsForLandlord(supabase, user.id),
+    getMessageUsage(supabase),
   ]);
   const access = computeAccessStatus(sub);
   const hasStripeSubscription = !!sub?.stripe_subscription_id;
@@ -96,6 +100,13 @@ export default async function BillingPage({
       <p className="mt-4 text-sm text-zinc-500">
         You currently have {unitCount} unit{unitCount === 1 ? "" : "s"} across your properties.
       </p>
+
+      {usage.tier && (
+        <div className="mt-6">
+          <MessageUsageBar usage={usage} />
+          {usage.blocked && <MessageCapUpgradeButton tier={usage.tier} />}
+        </div>
+      )}
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         {(["tier_1_3", "tier_4_10"] as const).map((tier) => (
