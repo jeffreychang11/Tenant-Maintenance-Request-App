@@ -4,6 +4,7 @@ import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createInvite, revokeInvite, removeTenant } from "@/app/(landlord)/properties/actions";
 import { TenantRow } from "@/components/properties/TenantRow";
+import { CopyInviteMessage } from "@/components/properties/CopyInviteMessage";
 import { BackButton } from "@/components/layout/BackButton";
 
 export default async function UnitDetailPage({
@@ -42,7 +43,7 @@ export default async function UnitDetailPage({
 
   const { data: invites } = await supabase
     .from("tenant_invites")
-    .select("id, email, status, expires_at, created_at")
+    .select("id, email, status, expires_at, created_at, token")
     .eq("unit_id", unitId)
     .order("created_at", { ascending: false });
 
@@ -127,11 +128,19 @@ export default async function UnitDetailPage({
                   </p>
                 </div>
                 {inv.status === "pending" && (
-                  <form action={revokeForUnit.bind(null, inv.id)}>
-                    <button type="submit" className="text-xs text-red-600 hover:underline">
-                      Revoke
-                    </button>
-                  </form>
+                  <div className="flex shrink-0 items-center gap-4">
+                    <CopyInviteMessage
+                      inviteUrl={`${process.env.NEXT_PUBLIC_APP_URL}/invite/${inv.token}`}
+                    />
+                    <form action={revokeForUnit.bind(null, inv.id)}>
+                      <button
+                        type="submit"
+                        className="text-xs text-red-600 hover:underline active:underline"
+                      >
+                        Revoke
+                      </button>
+                    </form>
+                  </div>
                 )}
               </li>
             ))}

@@ -1777,6 +1777,36 @@ left of the badge) using temporary test `maintenance_requests` rows
 (inserted and deleted via the service-role client, same pattern as
 elsewhere in this file).
 
+**"Copy invite message" button on pending invites**
+(`components/properties/CopyInviteMessage.tsx`, wired into the unit
+detail page's existing "Invite history" list —
+`app/(landlord)/properties/[propertyId]/units/[unitId]/page.tsx`, which
+needed `token` added to that list's `tenant_invites` select). Copies a
+fixed template — `"Hi [Name], going forward all maintenance requests
+will go through our official portal here: {inviteUrl}. Please bookmark
+this link on your phone's home screen."` — with the real invite URL
+substituted in, but **`[Name]` is deliberately left as a literal
+placeholder**: `createInvite` only ever collects the tenant's email at
+invite time, never a name (the tenant supplies their own name later,
+during signup), so there's nothing real to fill in — the landlord edits
+that bracket by hand before sending. Only shown for `pending` invites,
+next to the existing "Revoke" link. Uses `navigator.clipboard.writeText`
+with a fallback to the legacy `document.execCommand("copy")` (hidden
+textarea trick) for browsers/contexts where the Clipboard API is
+unavailable — **and checks execCommand's actual boolean return value**,
+not just whether it threw: a real bug caught live in this session's
+automated browser sandbox, which blocks clipboard access entirely and
+makes `execCommand("copy")` return `false` rather than throwing, so the
+first version of this code silently reported "Copied!" on a completely
+failed copy. Fixed by branching on the return value; verified via the
+button correctly rendering "Couldn't copy" in that same
+clipboard-blocked sandbox, which round-trips to confirm the success path
+(`setStatus("copied")`) is reachable too — this sandbox specifically
+cannot verify a real successful copy end-to-end (both the modern API and
+the legacy fallback are blocked here), so that half still wants a manual
+check on a real browser/device if this becomes worth double-checking
+again later.
+
 ## Environment setup
 
 Copy `.env.local.example` and fill in:
