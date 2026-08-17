@@ -123,7 +123,7 @@ export default async function BillingPage({
                 <input type="hidden" name="interval" value="month" />
                 <button
                   type="submit"
-                  className="w-full scale-100 rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition-transform hover:scale-110 hover:shadow-md active:scale-95 dark:bg-white dark:text-black"
+                  className="w-full rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-zinc-300"
                 >
                   Subscribe monthly
                 </button>
@@ -133,7 +133,7 @@ export default async function BillingPage({
                 <input type="hidden" name="interval" value="year" />
                 <button
                   type="submit"
-                  className="w-full scale-100 rounded-full border border-black/10 px-4 py-2 text-sm font-medium transition-transform hover:scale-110 hover:shadow-md active:scale-95 dark:border-white/20"
+                  className="w-full rounded-full border border-black/10 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 active:bg-black/10 dark:border-white/20 dark:hover:bg-white/10 dark:active:bg-white/15"
                 >
                   Subscribe yearly {PLAN_PRICES[tier].year?.replace("/yr", "")} (Save{" "}
                   {YEARLY_SAVINGS_PERCENT[tier]}%)
@@ -155,7 +155,7 @@ export default async function BillingPage({
         <form action={createPortalSession} className="mt-6">
           <button
             type="submit"
-            className="rounded-full border border-black/10 px-4 py-2 text-sm font-medium dark:border-white/20"
+            className="rounded-full border border-black/10 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 active:bg-black/10 dark:border-white/20 dark:hover:bg-white/10 dark:active:bg-white/15"
           >
             Manage billing
           </button>

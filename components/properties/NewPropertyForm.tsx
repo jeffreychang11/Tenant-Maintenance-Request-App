@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { createProperty } from "@/app/(landlord)/properties/actions";
 import { UnitUpgradeModal } from "@/components/billing/UnitUpgradeModal";
 
@@ -9,11 +9,17 @@ type PendingUpgrade = Extract<
   { status: "needs_upgrade" }
 >;
 
+const REQUIRED_FIELDS = ["address_line1", "city", "state", "postal_code"] as const;
+
 export function NewPropertyForm() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [upgrade, setUpgrade] = useState<PendingUpgrade | null>(null);
   const [pendingFormData, setPendingFormData] = useState<FormData | null>(null);
+  // Which required fields are currently empty — drives a red-border
+  // highlight instead of the browser's native "Please fill out this
+  // field" bubble (the form has noValidate for exactly this reason).
+  const [invalidFields, setInvalidFields] = useState<Set<string>>(new Set());
 
   async function submit(formData: FormData, confirmed: boolean) {
     setPending(true);
@@ -34,27 +40,37 @@ export function NewPropertyForm() {
     }
   }
 
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const missing = new Set<string>(
+      REQUIRED_FIELDS.filter((field) => !(formData.get(field) as string)?.trim())
+    );
+    setInvalidFields(missing);
+    if (missing.size > 0) return;
+    submit(formData, false);
+  }
+
+  function clearInvalid(field: string) {
+    setInvalidFields((prev) => {
+      if (!prev.has(field)) return prev;
+      const next = new Set(prev);
+      next.delete(field);
+      return next;
+    });
+  }
+
+  function inputClass(field: string) {
+    return `mt-1 w-full rounded-md border px-3 py-2 dark:bg-black ${
+      invalidFields.has(field)
+        ? "border-red-500 dark:border-red-500"
+        : "border-black/10 dark:border-white/20"
+    }`;
+  }
+
   return (
     <>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          submit(new FormData(e.currentTarget), false);
-        }}
-        className="mt-8 flex flex-col gap-4"
-      >
-        <div>
-          <label htmlFor="name" className="block text-sm text-zinc-600 dark:text-zinc-400">
-            Property name
-          </label>
-          <input
-            id="name"
-            name="name"
-            required
-            placeholder="123 Main St"
-            className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
-          />
-        </div>
+      <form onSubmit={handleSubmit} noValidate className="mt-8 flex flex-col gap-4">
         <div>
           <label htmlFor="address_line1" className="block text-sm text-zinc-600 dark:text-zinc-400">
             Street address
@@ -62,7 +78,9 @@ export function NewPropertyForm() {
           <input
             id="address_line1"
             name="address_line1"
-            className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
+            placeholder="123 Main St"
+            className={inputClass("address_line1")}
+            onChange={() => clearInvalid("address_line1")}
           />
         </div>
         <div>
@@ -85,7 +103,8 @@ export function NewPropertyForm() {
             <input
               id="city"
               name="city"
-              className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
+              className={inputClass("city")}
+              onChange={() => clearInvalid("city")}
             />
           </div>
           <div>
@@ -95,7 +114,8 @@ export function NewPropertyForm() {
             <input
               id="state"
               name="state"
-              className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
+              className={inputClass("state")}
+              onChange={() => clearInvalid("state")}
             />
           </div>
         </div>
@@ -106,7 +126,8 @@ export function NewPropertyForm() {
           <input
             id="postal_code"
             name="postal_code"
-            className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
+            className={inputClass("postal_code")}
+            onChange={() => clearInvalid("postal_code")}
           />
         </div>
 
@@ -115,7 +136,7 @@ export function NewPropertyForm() {
         <button
           type="submit"
           disabled={pending}
-          className="mt-2 rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+          className="mt-2 rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-zinc-300"
         >
           {pending ? "…" : "Create property"}
         </button>

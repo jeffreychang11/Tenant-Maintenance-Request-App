@@ -100,7 +100,7 @@ export function RequestDetail({
             type="button"
             onClick={() => setLightbox(null)}
             aria-label="Close"
-            className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+            className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20 active:bg-white/30"
           >
             <IconX size={20} />
           </button>

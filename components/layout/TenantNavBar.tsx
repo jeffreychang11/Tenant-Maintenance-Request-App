@@ -41,7 +41,7 @@ export function TenantNavBar({ landlordContact }: { landlordContact?: LandlordCo
       <button
         onClick={() => setOpen((o) => !o)}
         aria-label={open ? "Close menu" : "Open menu"}
-        className="rounded-md p-1.5 text-zinc-600 hover:bg-black/5 dark:text-zinc-400 dark:hover:bg-white/10"
+        className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-black/5 active:bg-black/10 dark:text-zinc-400 dark:hover:bg-white/10 dark:active:bg-white/15"
       >
         {open ? <IconX size={22} /> : <IconMenu2 size={22} />}
       </button>
@@ -54,14 +54,14 @@ export function TenantNavBar({ landlordContact }: { landlordContact?: LandlordCo
           <Link
             href="/home"
             onClick={() => setOpen(false)}
-            className="rounded-md px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10"
+            className="rounded-md px-3 py-2 transition-colors hover:bg-black/5 active:bg-black/10 dark:hover:bg-white/10 dark:active:bg-white/15"
           >
             Home
           </Link>
           <Link
             href="/my-requests"
             onClick={() => setOpen(false)}
-            className="rounded-md px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10"
+            className="rounded-md px-3 py-2 transition-colors hover:bg-black/5 active:bg-black/10 dark:hover:bg-white/10 dark:active:bg-white/15"
           >
             Requests
           </Link>
@@ -69,7 +69,7 @@ export function TenantNavBar({ landlordContact }: { landlordContact?: LandlordCo
             <Link
               href="/contact-landlord"
               onClick={() => setOpen(false)}
-              className="rounded-md px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10"
+              className="rounded-md px-3 py-2 transition-colors hover:bg-black/5 active:bg-black/10 dark:hover:bg-white/10 dark:active:bg-white/15"
             >
               Contact Landlord
             </Link>
@@ -77,14 +77,14 @@ export function TenantNavBar({ landlordContact }: { landlordContact?: LandlordCo
           <Link
             href="/settings"
             onClick={() => setOpen(false)}
-            className="rounded-md px-3 py-2 hover:bg-black/5 dark:hover:bg-white/10"
+            className="rounded-md px-3 py-2 transition-colors hover:bg-black/5 active:bg-black/10 dark:hover:bg-white/10 dark:active:bg-white/15"
           >
             Settings
           </Link>
           <div className="my-1 border-t border-black/10 dark:border-white/10" />
           <button
             onClick={handleSignOut}
-            className="rounded-md px-3 py-2 text-left hover:bg-black/5 dark:hover:bg-white/10"
+            className="rounded-md px-3 py-2 text-left transition-colors hover:bg-black/5 active:bg-black/10 dark:hover:bg-white/10 dark:active:bg-white/15"
           >
             Sign out
           </button>

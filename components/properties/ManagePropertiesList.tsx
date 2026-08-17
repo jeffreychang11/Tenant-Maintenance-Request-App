@@ -100,7 +100,7 @@ export function ManagePropertiesList({
                 <Link
                   href={`/properties/${p.id}/edit`}
                   aria-label="Edit property"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 text-zinc-600 transition-colors hover:bg-zinc-200 active:bg-zinc-300 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:active:bg-zinc-600"
                 >
                   <IconPencil size={16} aria-hidden="true" />
                 </Link>
@@ -108,7 +108,7 @@ export function ManagePropertiesList({
                   action={deleteProperty.bind(null, p.id)}
                   confirmMessage={`Delete "${p.name}"? This permanently removes its units, tenant links, and all maintenance request history. This can't be undone.`}
                   confirmLabel="Delete property"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-950 dark:text-red-400 dark:hover:bg-red-900"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-red-50 text-red-600 transition-colors hover:bg-red-100 active:bg-red-200 dark:bg-red-950 dark:text-red-400 dark:hover:bg-red-900 dark:active:bg-red-800"
                 >
                   <IconMinus size={16} aria-hidden="true" />
                   <span className="sr-only">Delete property</span>
@@ -134,7 +134,7 @@ export function ManagePropertiesList({
                     </div>
                     <Link
                       href={`/properties/${p.id}/units/${u.id}`}
-                      className="shrink-0 scale-100 rounded-full bg-black px-3 py-1.5 text-xs font-medium text-white transition-transform hover:scale-110 hover:shadow-md active:scale-95 dark:bg-white dark:text-black"
+                      className="shrink-0 rounded-full bg-black px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-zinc-300"
                     >
                       {activeTenant ? "Manage →" : "Add tenant"}
                     </Link>

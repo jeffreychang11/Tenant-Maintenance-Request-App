@@ -29,7 +29,7 @@ export function MessageCapUpgradeButton({ tier }: { tier: Tier }) {
       <form action={createMessageBundleCheckout} className="mt-3">
         <button
           type="submit"
-          className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+          className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-zinc-300"
         >
           Buy 200 more messages ($5)
         </button>
@@ -63,7 +63,7 @@ export function MessageCapUpgradeButton({ tier }: { tier: Tier }) {
         type="button"
         onClick={startUpgrade}
         disabled={pending}
-        className="mt-3 rounded-full bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+        className="mt-3 rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-zinc-300"
       >
         {pending ? "…" : "Upgrade to Premium"}
       </button>

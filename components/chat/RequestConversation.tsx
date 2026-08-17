@@ -163,7 +163,7 @@ export function RequestConversation({
             <button
               type="submit"
               disabled={sending}
-              className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+              className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-zinc-300"
             >
               Send
             </button>
@@ -172,7 +172,7 @@ export function RequestConversation({
           <button
             type="button"
             onClick={() => setReplying(true)}
-            className="mt-3 rounded-full border border-black/10 px-4 py-2 text-sm font-medium dark:border-white/20"
+            className="mt-3 rounded-full border border-black/10 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 active:bg-black/10 dark:border-white/20 dark:hover:bg-white/10 dark:active:bg-white/15"
           >
             Reply
           </button>
@@ -231,7 +231,7 @@ export function RequestConversation({
               <button
                 type="submit"
                 disabled={sending}
-                className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+                className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-zinc-300"
               >
                 Send
               </button>
@@ -261,7 +261,7 @@ export function RequestConversation({
             type="button"
             onClick={() => setLightbox(null)}
             aria-label="Close"
-            className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+            className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20 active:bg-white/30"
           >
             <IconX size={20} />
           </button>

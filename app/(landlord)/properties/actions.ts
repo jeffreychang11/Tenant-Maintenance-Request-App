@@ -57,7 +57,6 @@ export async function createProperty(formData: FormData): Promise<UnitLimitResul
   if (!user) redirect("/login");
   await requireActiveSubscription(user.id);
 
-  const name = (formData.get("name") as string)?.trim();
   const address_line1 = (formData.get("address_line1") as string)?.trim() || null;
   const city = (formData.get("city") as string)?.trim() || null;
   const state = (formData.get("state") as string)?.trim() || null;
@@ -65,7 +64,14 @@ export async function createProperty(formData: FormData): Promise<UnitLimitResul
   const unitLabel = (formData.get("unit_label") as string)?.trim() || null;
   const confirmed = formData.get("confirmed") === "1";
 
-  if (!name) throw new Error("Property name is required");
+  if (!address_line1) throw new Error("Street address is required");
+  if (!city) throw new Error("City is required");
+  if (!state) throw new Error("State is required");
+  if (!postal_code) throw new Error("ZIP code is required");
+  // properties.name is a required column with no dedicated form field
+  // anymore (the street address is the only identifying label a landlord
+  // enters now) — derive it from address_line1 so it stays populated.
+  const name = address_line1;
 
   const blocked = await resolveUnitLimit(supabase, user.id, unitLabel ? 1 : 0, confirmed);
   if (blocked) return blocked;

@@ -1547,6 +1547,144 @@ axis was transform-driven.
 `lib/stripe/plans.ts`'s `planFeatures()` — the old wording undersold it
 by implying video-only, when photo attachments work the same way.
 
+**"Property name" field removed from the add-property form** — street
+address is now the only identifying field a landlord enters, matching
+the explicit ask that only the address (and what's below it) matters.
+`properties.name` is still `text not null` at the DB level (no migration
+— didn't want to touch a column other flows already treat as
+deliberately immutable, see the earlier "Edit property page" entry
+above), so `createProperty` in
+`app/(landlord)/properties/actions.ts` now derives `name` straight from
+`address_line1` instead of reading a separate form field, and
+`address_line1` itself gained the `required` attribute in
+`NewPropertyForm.tsx` (it was optional before, back when `name` was the
+required field carrying the address). Verified live: creating a property
+with just a street address + city redirected correctly and showed the
+right label on both the property detail page and Manage Properties.
+
+**Add-property form now requires city/state/ZIP too (later session)** —
+`NewPropertyForm.tsx` added `required` to those three inputs, and
+`createProperty` (`app/(landlord)/properties/actions.ts`) gained matching
+server-side checks (`if (!city) throw...`, same for state/postal_code)
+since HTML `required` alone doesn't stop a direct POST. **Unit number
+deliberately stays optional** — asked the user directly rather than
+guessing, since forcing a unit at creation would break the existing
+"add units later from the property page" flow multi-unit properties rely
+on elsewhere. Display is unchanged: property listings still only show
+address/city/state (`p.name, p.city, p.state`), same as before — the ZIP
+is now always collected but was never part of what's shown in tiles/lists
+anyway, so nothing needed to change there.
+
+**"Enable/Disable push notifications" button gets the same pop
+animation** (`components/settings/PushToggle.tsx`) as the other solid
+black pills — `hover:scale-110 hover:shadow-md active:scale-95`. This
+component is shared by both the landlord and tenant Settings pages, so
+one change covers both roles.
+
+**Add-property form validation no longer shows the native browser
+"Please fill out this field" bubble** — `NewPropertyForm.tsx` dropped the
+`required` attributes in favor of `noValidate` on the `<form>` plus
+manual validation in the submit handler: on submit, any empty required
+field (`address_line1`/`city`/`state`/`postal_code`) is added to an
+`invalidFields` state Set, which drives a red border on just that input
+(cleared on its own `onChange` as soon as the landlord types something)
+— submission is blocked client-side the same as before, just with a
+quieter highlight instead of a popup. The server-side `createProperty`
+checks added for the required-fields change above are unaffected by
+this — they're the real enforcement, this is purely presentational.
+
+**Magic-link sign-in removed from `/login`** (`components/auth/LoginForm.tsx`)
+— was a password/magic-link toggle, now password-only, per explicit ask
+("I don't think that is useful"). Deliberately left `/auth/callback`
+(`app/(auth)/auth/callback/route.ts`) and its middleware public-route
+allowance untouched — that route is shared infrastructure, also used by
+the signup email-confirmation redirect and the tenant invite-signup
+flow's `emailRedirectTo`, so removing it would have broken both of those.
+Verified live: `/login` now shows only email/password with no mode
+toggle, and signing in with the test landlord's password still redirects
+to `/dashboard` correctly.
+
+**"Log in" button gets the same pop animation, "Sign up" link underlines
+on hover/tap** (`components/auth/LoginForm.tsx`) — `Log in` matches the
+`hover:scale-110 hover:shadow-md active:scale-95` treatment used
+everywhere else; the `Sign up` link (inline text, not a pill) instead
+gets `hover:underline active:underline`, since underline is the
+appropriate affordance for plain inline link text rather than a button
+fill/scale change.
+
+**The scale/shadow "pop" was removed from every button that had it, per
+explicit follow-up feedback that it read as too intense** — replaced
+with a plain color-shift on hover/tap instead, `transition-colors`
+instead of `transition-transform`, no size change at all. Five spots
+touched: `components/settings/PushToggle.tsx`, `components/auth/LoginForm.tsx`
+("Log in"), `components/properties/ManagePropertiesList.tsx`
+("Manage →"/"Add tenant"), and both Subscribe buttons on
+`app/(landlord)/billing/page.tsx`. Two variants depending on the
+button's base look:
+- **Solid black/white pills** (Push toggle, Log in, Manage/Add tenant,
+  Subscribe monthly): `hover:bg-zinc-800 active:bg-zinc-700` in light
+  mode, `dark:hover:bg-zinc-200 dark:active:bg-zinc-300` in dark —
+  darkens/lightens the fill slightly rather than inverting or moving.
+- **Outlined pills** (Subscribe yearly): `hover:bg-black/5
+  active:bg-black/10 dark:hover:bg-white/10 dark:active:bg-white/15` — a
+  faint tint fill, matching the same light-touch hover treatment already
+  used elsewhere in the app for plain bordered rows (e.g. the hamburger
+  nav menu items).
+
+Deliberately left the dropdown pill buttons' silver-on-hover treatment
+(`PropertyTile.tsx`'s `pillButtonClass`, see above) and the tile-row
+hover tint (`statusInteractiveClass`) alone — this feedback was
+specifically about the scale/shadow pop pattern, not every hover effect
+in the app, and those two were never part of that pattern to begin with.
+
+**The subtle color-shift hover/active treatment was extended to every
+remaining button across both the landlord and tenant sides** (later
+session, explicit follow-up: "put that for the other buttons on the
+app"). Most of these previously had *no* hover or active state at all —
+this wasn't just about matching the pop-removal above, it closed a much
+larger consistency gap. Same two variants as above (solid black/white →
+`hover:bg-zinc-800 active:bg-zinc-700` / `dark:hover:bg-zinc-200
+dark:active:bg-zinc-300`; outlined → `hover:bg-black/5 active:bg-black/10`
+/ `dark:hover:bg-white/10 dark:active:bg-white/15`), plus two narrower
+variants for buttons with their own established color (added `active:`
+one step past their existing `hover:` in the same hue rather than
+switching to zinc): status-colored outlines (amber/green in
+`StatusControls.tsx`) and icon-circle buttons that already had a tinted
+hover (zinc for Edit, red for Delete in `ManagePropertiesList.tsx`, the
+add-property `+` buttons on `dashboard/page.tsx` and
+`manage-properties/page.tsx`). Plain-text links (not pills) got
+`hover:underline active:underline` instead, matching the `Sign
+up`/`Log in` treatment from earlier. Touched, non-exhaustively: `Accept
+invite` (`app/invite/[token]/page.tsx`), `Send invite` (both the unit
+detail and property detail pages), `Save changes` (edit-property page),
+`WelcomeChooser.tsx`'s Continue button/back-arrow/role cards/Log in link,
+`signup/page.tsx`'s Sign up button/Log in link, both chat `Send` buttons
+and the `Reply` button (`MessageThread.tsx`, `RequestConversation.tsx`),
+both lightbox close buttons (`RequestConversation.tsx`,
+`RequestDetail.tsx`), `ConfirmButton.tsx`'s Cancel/destructive-confirm
+pair (used by Delete property and Remove tenant), every billing modal's
+buttons (`MessageCapUpgradeButton.tsx`, `UnitUpgradeModal.tsx`,
+`UpgradeCelebrationModal.tsx`, `MessageCapWarningPopup.tsx`), `Manage
+billing` on `/billing`, `InviteSignupForm.tsx`'s Create account,
+`AddUnitForm.tsx`'s Add unit, `NewRequestForm.tsx`'s Submit request and
+its photo/video dropzone, `NewPropertyForm.tsx`'s Create property
+(missed in the required-fields pass earlier — caught by a repo-wide grep
+for `rounded-full` classes lacking `hover:`), `BackButton.tsx` (shared by
+both roles), both hamburger nav menus in full (`LandlordNavBar.tsx`,
+`TenantNavBar.tsx` — every item plus the toggle button), and
+`TenantRow.tsx`'s Remove tenant link. Deliberately left alone: the
+brand wordmark (`Logo.tsx` — not an action button), and
+`MessageUsageBanner.tsx`/`TrialBanner.tsx`'s links (already
+permanently-underlined at rest, which is its own sufficient affordance —
+adding a hover state on top wasn't part of what was asked and risked
+looking inconsistent with that established "underlined banner CTA"
+style). Verified via a repo-wide grep for `rounded-full` classNames
+missing `hover:` (down to zero real hits after this pass) and live
+spot-checks on both the landlord test account (Manage Properties,
+Billing, hamburger menu) and the tenant test account (hamburger menu,
+new-request form + dropzone, Settings push toggle, request-detail status
+buttons).
+
 ## Environment setup
 
 Copy `.env.local.example` and fill in:

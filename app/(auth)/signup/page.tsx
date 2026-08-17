@@ -107,7 +107,7 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={status === "loading"}
-            className="mt-2 rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+            className="mt-2 rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-zinc-300"
           >
             Sign up
           </button>
@@ -116,7 +116,10 @@ export default function SignupPage() {
 
       <p className="mt-8 text-sm text-zinc-600 dark:text-zinc-400">
         Already have an account?{" "}
-        <Link href="/login?form=1" className="font-medium text-black dark:text-white">
+        <Link
+          href="/login?form=1"
+          className="font-medium text-black hover:underline active:underline dark:text-white"
+        >
           Log in
         </Link>
       </p>

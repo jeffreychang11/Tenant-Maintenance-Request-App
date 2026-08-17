@@ -31,14 +31,14 @@ export function UpgradeCelebrationModal({ show }: { show: boolean }) {
           <Link
             href="/billing"
             onClick={() => setOpen(false)}
-            className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+            className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-zinc-300"
           >
             View plans
           </Link>
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="rounded-full border border-black/10 px-4 py-2 text-sm font-medium dark:border-white/20"
+            className="rounded-full border border-black/10 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 active:bg-black/10 dark:border-white/20 dark:hover:bg-white/10 dark:active:bg-white/15"
           >
             Dismiss
           </button>

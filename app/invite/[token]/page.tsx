@@ -58,7 +58,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
         <form action={acceptForToken} className="mt-6">
           <button
             type="submit"
-            className="rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white dark:bg-white dark:text-black"
+            className="rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-zinc-300"
           >
             Accept invite
           </button>

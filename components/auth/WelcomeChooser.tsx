@@ -43,7 +43,7 @@ export function WelcomeChooser() {
             setError(null);
           }}
           aria-label="Back"
-          className="mb-4 inline-flex h-9 w-9 items-center justify-center self-start rounded-full text-zinc-600 hover:bg-black/5 dark:text-zinc-400 dark:hover:bg-white/10"
+          className="mb-4 inline-flex h-9 w-9 items-center justify-center self-start rounded-full text-zinc-600 transition-colors hover:bg-black/5 active:bg-black/10 dark:text-zinc-400 dark:hover:bg-white/10 dark:active:bg-white/15"
         >
           <IconArrowLeft size={20} aria-hidden="true" />
         </button>
@@ -72,7 +72,7 @@ export function WelcomeChooser() {
 
           <button
             type="submit"
-            className="mt-2 rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white dark:bg-white dark:text-black"
+            className="mt-2 rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-zinc-300"
           >
             Continue
           </button>
@@ -91,7 +91,7 @@ export function WelcomeChooser() {
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
         <Link
           href="/signup"
-          className="flex flex-col items-center gap-3 rounded-xl border border-black/10 px-4 py-8 text-center transition hover:border-black/30 dark:border-white/10 dark:hover:border-white/30"
+          className="flex flex-col items-center gap-3 rounded-xl border border-black/10 px-4 py-8 text-center transition-colors hover:border-black/30 active:border-black/40 dark:border-white/10 dark:hover:border-white/30 dark:active:border-white/40"
         >
           <IconBuildingSkyscraper size={32} stroke={1.5} />
           <span className="font-medium">I&apos;m a landlord</span>
@@ -100,7 +100,7 @@ export function WelcomeChooser() {
         <button
           type="button"
           onClick={() => setTenantOpen(true)}
-          className="flex flex-col items-center gap-3 rounded-xl border border-black/10 px-4 py-8 text-center transition hover:border-black/30 dark:border-white/10 dark:hover:border-white/30"
+          className="flex flex-col items-center gap-3 rounded-xl border border-black/10 px-4 py-8 text-center transition-colors hover:border-black/30 active:border-black/40 dark:border-white/10 dark:hover:border-white/30 dark:active:border-white/40"
         >
           <IconHome size={32} stroke={1.5} />
           <span className="font-medium">I&apos;m a tenant</span>
@@ -109,7 +109,10 @@ export function WelcomeChooser() {
 
       <p className="mt-8 text-sm text-zinc-600 dark:text-zinc-400">
         Already have an account?{" "}
-        <Link href="/login?form=1" className="font-medium text-black dark:text-white">
+        <Link
+          href="/login?form=1"
+          className="font-medium text-black hover:underline active:underline dark:text-white"
+        >
           Log in
         </Link>
       </p>

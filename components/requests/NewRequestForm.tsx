@@ -150,7 +150,7 @@ export function NewRequestForm({
         </label>
         <label
           htmlFor="files"
-          className="mt-1 flex aspect-square w-28 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-black/20 text-zinc-400 hover:bg-black/[.02] dark:border-white/20 dark:hover:bg-white/[.03]"
+          className="mt-1 flex aspect-square w-28 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-black/20 text-zinc-400 transition-colors hover:bg-black/[.02] active:bg-black/[.05] dark:border-white/20 dark:hover:bg-white/[.03] dark:active:bg-white/[.06]"
         >
           <IconPlus size={28} aria-hidden="true" />
           <span className="sr-only">Add photo or video</span>
@@ -191,7 +191,7 @@ export function NewRequestForm({
       <button
         type="submit"
         disabled={status === "submitting" || compressing || !unitId}
-        className="rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-black"
+        className="rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-zinc-300"
       >
         {status === "submitting" ? "Submitting..." : "Submit request"}
       </button>

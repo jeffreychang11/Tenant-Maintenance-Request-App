@@ -31,7 +31,7 @@ export function TenantRow({
           action={onRemove}
           confirmMessage={`Mark ${fullName} as moved out? They'll lose access to this unit, and you'll be able to invite a new tenant.`}
           confirmLabel="Remove tenant"
-          className="shrink-0 text-xs text-red-600 hover:underline"
+          className="shrink-0 text-xs text-red-600 hover:underline active:underline"
         >
           Remove tenant
         </ConfirmButton>

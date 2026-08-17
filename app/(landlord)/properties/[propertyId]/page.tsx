@@ -76,7 +76,7 @@ export default async function PropertyDetailPage({
                     />
                     <button
                       type="submit"
-                      className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white dark:bg-white dark:text-black"
+                      className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-zinc-300"
                     >
                       Send invite
                     </button>
