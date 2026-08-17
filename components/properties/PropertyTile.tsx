@@ -93,47 +93,53 @@ export function PropertyTile({
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className={`flex w-full cursor-pointer items-center justify-between gap-3 border-l-4 px-4 py-4 text-left transition-colors ${barColor} ${rowTint}`}
+        className={`flex w-full cursor-pointer flex-col gap-2 border-l-4 px-4 py-4 text-left transition-colors sm:flex-row sm:items-center sm:justify-between sm:gap-3 ${barColor} ${rowTint}`}
       >
         <div className="min-w-0">
-          <p className="truncate text-lg font-semibold">{tenantName || "Vacant"}</p>
-          <p className="truncate text-sm text-zinc-600 dark:text-zinc-400">{addressLine}</p>
+          <p className="sm:truncate text-lg font-semibold">{tenantName || "Vacant"}</p>
+          <p className="sm:truncate text-sm text-zinc-600 dark:text-zinc-400">{addressLine}</p>
         </div>
-        <div className="flex shrink-0 items-center gap-3">
-          {categorySummary ? (
-            <span className="flex items-center gap-2 text-zinc-600 dark:text-zinc-300">
-              {categorySummary.map(({ category, count }) => {
-                const Icon = CATEGORIES.find((c) => c.value === category)?.icon;
-                if (!Icon) return null;
-                return (
-                  <span key={category} className="flex items-center gap-0.5">
-                    <Icon size={20} aria-hidden="true" />
-                    {count > 1 && <span className="text-xs font-medium">×{count}</span>}
+        {(categorySummary || (CategoryIcon && categoryValue) || badgeStatus) && (
+          <div className="flex shrink-0 items-center gap-3">
+            <div>
+              {categorySummary ? (
+                <span className="flex items-center gap-2 text-zinc-600 dark:text-zinc-300">
+                  {categorySummary.map(({ category, count }) => {
+                    const Icon = CATEGORIES.find((c) => c.value === category)?.icon;
+                    if (!Icon) return null;
+                    return (
+                      <span key={category} className="flex items-center gap-0.5">
+                        <Icon size={20} aria-hidden="true" />
+                        {count > 1 && <span className="text-xs font-medium">×{count}</span>}
+                      </span>
+                    );
+                  })}
+                </span>
+              ) : (
+                CategoryIcon &&
+                categoryValue && (
+                  <span className="flex items-center gap-1.5 text-sm font-medium text-zinc-600 dark:text-zinc-300">
+                    <CategoryIcon size={20} aria-hidden="true" />
+                    {categoryLabel(categoryValue)}
                   </span>
-                );
-              })}
-            </span>
-          ) : (
-            CategoryIcon &&
-            categoryValue && (
-              <span className="flex items-center gap-1.5 text-sm font-medium text-zinc-600 dark:text-zinc-300">
-                <CategoryIcon size={20} aria-hidden="true" />
-                {categoryLabel(categoryValue)}
-              </span>
-            )
-          )}
-          {badgeStatus === "multiple" ? (
-            <span className="whitespace-nowrap rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-400">
-              Multiple requests
-            </span>
-          ) : badgeStatus === "done" ? (
-            <span className="whitespace-nowrap rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-400">
-              Complete
-            </span>
-          ) : (
-            badgeStatus && <StatusBadge status={badgeStatus} />
-          )}
-        </div>
+                )
+              )}
+            </div>
+            <div>
+              {badgeStatus === "multiple" ? (
+                <span className="whitespace-nowrap rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950 dark:text-blue-400">
+                  Multiple requests
+                </span>
+              ) : badgeStatus === "done" ? (
+                <span className="whitespace-nowrap rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-950 dark:text-green-400">
+                  Complete
+                </span>
+              ) : (
+                badgeStatus && <StatusBadge status={badgeStatus} />
+              )}
+            </div>
+          </div>
+        )}
       </button>
 
       <div

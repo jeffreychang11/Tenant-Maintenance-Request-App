@@ -1743,6 +1743,40 @@ forced to dark (`window.matchMedia('(prefers-color-scheme: dark)').matches
 `#171717` text — confirms the app no longer responds to OS dark-mode
 preference at all, in either Tailwind-utility or raw-CSS styling.
 
+**Nav logo + wordmark sized up** (`components/layout/Logo.tsx`) — icon
+18px → 22px, wordmark `text-base` → `text-lg`, per explicit follow-up
+("slightly bigger"). Note the Welcome/role-chooser page
+(`WelcomeChooser.tsx`) still doesn't render `<Logo>` at all — never
+added, confirmed while screenshotting the nav for the user, left as-is
+since removing it wasn't asked for.
+
+**Dashboard property tile: name/address no longer gets squeezed by the
+status badge on mobile** (`PropertyTile.tsx`'s collapsed header row).
+Previously a single `flex items-center justify-between` row put the
+name/address on the left and the category icon + status badge on the
+right always side-by-side — fine on desktop, but on a real ~375px phone
+viewport a badged tile (e.g. "Maintenance required") left so little
+width for the name/address that both truncated to unreadable fragments
+("Tes…" / "5 Birc…"), confirmed by an actual 375×812 mobile-viewport
+screenshot, not just inferred. Went through a few iterations with the
+user before landing on the final shape: **mobile (base, no breakpoint
+prefix)** stacks the row into three lines — name, address, then a third
+line with the category icon(s) grouped directly next to the status badge
+(not spread apart with `justify-between` — an explicit correction mid-
+session, "make it be right next to the icons"). **`sm:` and up** reverts
+to the original single-row layout (`sm:flex-row sm:items-center
+sm:justify-between`), since the app's content column has a fixed
+max-width that was never actually the cause of the truncation — only
+true narrow/mobile viewports were. `sm:truncate` on the name/address
+`<p>` tags is a safety net for the desktop row specifically (an
+unusually long name/address), not used on mobile where the stacked line
+has the tile's full width and truncation was the original bug being
+fixed. Verified at both breakpoints with real screenshots, including the
+multi-category case (2+ category icons, no per-icon text labels, grouped
+left of the badge) using temporary test `maintenance_requests` rows
+(inserted and deleted via the service-role client, same pattern as
+elsewhere in this file).
+
 ## Environment setup
 
 Copy `.env.local.example` and fill in:

@@ -3,12 +3,12 @@ import Link from "next/link";
 
 export function Logo({ href }: { href: string }) {
   return (
-    <Link href={href} className="flex items-center gap-2 text-base text-black dark:text-white">
+    <Link href={href} className="flex items-center gap-2 text-lg text-black dark:text-white">
       <Image
         src="/logo-icon.png"
         alt=""
-        width={18}
-        height={18}
+        width={22}
+        height={22}
         className="rounded-md"
       />
       <span className="flex items-baseline">
