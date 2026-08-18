@@ -217,6 +217,7 @@ export async function sendInviteMessage(propertyId: string, unitId: string, invi
     to: invite.email,
     firstName: firstNameOf(invite.tenant_name || "there"),
     inviteUrl: `${process.env.NEXT_PUBLIC_APP_URL}/invite/${invite.token}`,
+    replyTo: user.email,
   });
 
   revalidatePath(`/properties/${propertyId}/units/${unitId}`);

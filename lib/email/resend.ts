@@ -18,8 +18,12 @@ export async function sendInviteMessageEmail(opts: {
   to: string;
   firstName: string;
   inviteUrl: string;
+  // The landlord's own email (the one they signed up with) — set as
+  // reply-to so a tenant hitting "Reply" reaches the landlord directly,
+  // not the platform's own from-address, which nobody reads.
+  replyTo?: string;
 }) {
-  const { to, firstName, inviteUrl } = opts;
+  const { to, firstName, inviteUrl, replyTo } = opts;
   const message = buildInviteMessage(firstName, inviteUrl);
 
   if (!resend) {
@@ -37,6 +41,7 @@ export async function sendInviteMessageEmail(opts: {
     to,
     subject: "A message from your landlord",
     html: `<p>A message from your landlord:</p><p>"${escapedMessage}"</p>`,
+    ...(replyTo ? { replyTo } : {}),
   });
   // The Resend SDK resolves with { error } on API failures rather than
   // throwing, so callers checking only for a thrown exception would never
