@@ -13,7 +13,7 @@ export function WelcomeChooser() {
 
       <div className="mt-10 flex w-full max-w-xs flex-col gap-3">
         <Link
-          href="/signup"
+          href="/get-started"
           className="rounded-full bg-black px-5 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700"
         >
           Sign up

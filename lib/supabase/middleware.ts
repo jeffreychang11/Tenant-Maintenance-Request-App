@@ -33,7 +33,8 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isAuthRoute = path.startsWith("/login") || path.startsWith("/signup");
+  const isAuthRoute =
+    path.startsWith("/login") || path.startsWith("/signup") || path.startsWith("/get-started");
   // PWA metadata routes (manifest, favicon/apple-touch-icon, and the
   // manifest's own icon URLs) are fetched directly by the browser/OS's
   // install machinery, not via normal navigation — redirecting them to
