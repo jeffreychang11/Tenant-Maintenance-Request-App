@@ -1,7 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe/client";
-import { priceIdFor, UNIT_RANGES, type Tier } from "@/lib/stripe/plans";
+import { priceIdFor, UNIT_RANGES, type Tier, type BillingInterval } from "@/lib/stripe/plans";
 import { applyTierChange } from "@/lib/billing/syncPlan";
 import { countUnitsForLandlord } from "@/lib/billing/subscription";
 
@@ -147,4 +147,70 @@ export async function applyDowngradeToBasic(landlordId: string) {
     );
   }
   await applyTierChange(landlordId, "tier_1_3", { prorationBehavior: "create_prorations" });
+}
+
+// Preview upgrading from Basic to Premium, in either billing interval — an
+// in-place prorated swap on the existing subscription, unlike the plain
+// Subscribe buttons (createCheckoutSession), which would start a second,
+// separate subscription instead of replacing the first. No unit-count gate
+// needed here: Premium's range is a superset of Basic's, so any landlord
+// eligible for Basic already fits Premium too.
+export async function previewUpgradeToPremium(
+  landlordId: string,
+  interval: BillingInterval
+): Promise<PlanChangePreview> {
+  if (!stripe) return { status: "unavailable" };
+  const admin = createAdminClient();
+  const { data: sub } = await admin
+    .from("subscriptions")
+    .select("*")
+    .eq("landlord_id", landlordId)
+    .single();
+  if (!sub?.stripe_subscription_id || sub.tier !== "tier_1_3") return { status: "unavailable" };
+
+  const newPriceId = priceIdFor("tier_4_10", interval);
+  if (!newPriceId) return { status: "unavailable" };
+
+  try {
+    const amountDueCents = await previewPriceSwap(sub.stripe_subscription_id, newPriceId);
+    if (amountDueCents === null) return { status: "unavailable" };
+    return { status: "ok", amountDueCents };
+  } catch (err) {
+    console.error(`[billing] Failed to preview upgrade to Premium for landlord ${landlordId}:`, err);
+    return { status: "unavailable" };
+  }
+}
+
+export async function applyUpgradeToPremium(landlordId: string, interval: BillingInterval) {
+  if (!stripe) return;
+  const admin = createAdminClient();
+  const { data: sub } = await admin
+    .from("subscriptions")
+    .select("*")
+    .eq("landlord_id", landlordId)
+    .single();
+  if (!sub?.stripe_subscription_id || sub.tier !== "tier_1_3") return;
+
+  const newPriceId = priceIdFor("tier_4_10", interval);
+  if (!newPriceId) return;
+
+  const stripeSub = await stripe.subscriptions.retrieve(sub.stripe_subscription_id);
+  const item = stripeSub.items.data[0];
+  if (!item) return;
+
+  const updated = await stripe.subscriptions.update(sub.stripe_subscription_id, {
+    items: [{ id: item.id, price: newPriceId }],
+    proration_behavior: "create_prorations",
+  });
+
+  await admin
+    .from("subscriptions")
+    .update({
+      tier: "tier_4_10",
+      billing_interval: interval,
+      stripe_price_id: newPriceId,
+      status: updated.status,
+      current_period_end: new Date(updated.items.data[0].current_period_end * 1000).toISOString(),
+    })
+    .eq("landlord_id", landlordId);
 }

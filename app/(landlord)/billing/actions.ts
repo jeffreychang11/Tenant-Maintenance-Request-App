@@ -16,6 +16,8 @@ import {
   applyYearlySwitch,
   previewDowngradeToBasic,
   applyDowngradeToBasic,
+  previewUpgradeToPremium,
+  applyUpgradeToPremium,
   type PlanChangePreview,
 } from "@/lib/billing/planChange";
 import { createClient } from "@/lib/supabase/server";
@@ -106,6 +108,16 @@ export async function previewBasicDowngrade(): Promise<PlanChangePreview> {
 export async function confirmBasicDowngrade() {
   const { user } = await requireProfile();
   await applyDowngradeToBasic(user.id);
+}
+
+export async function previewPremiumUpgrade(interval: BillingInterval): Promise<PlanChangePreview> {
+  const { user } = await requireProfile();
+  return previewUpgradeToPremium(user.id, interval);
+}
+
+export async function confirmPremiumUpgrade(interval: BillingInterval) {
+  const { user } = await requireProfile();
+  await applyUpgradeToPremium(user.id, interval);
 }
 
 export async function createPortalSession() {

@@ -22,6 +22,7 @@ import { MessageUsageBar } from "@/components/billing/MessageUsageBar";
 import { MessageCapUpgradeButton } from "@/components/billing/MessageCapUpgradeButton";
 import { SwitchToYearlyButton } from "@/components/billing/SwitchToYearlyButton";
 import { DowngradeToBasicButton } from "@/components/billing/DowngradeToBasicButton";
+import { UpgradeToPremiumButton } from "@/components/billing/UpgradeToPremiumButton";
 
 export default async function BillingPage({
   searchParams,
@@ -133,6 +134,8 @@ export default async function BillingPage({
                 )
               ) : tier === "tier_1_3" && activeTier === "tier_4_10" ? (
                 <DowngradeToBasicButton interval={activeInterval} />
+              ) : tier === "tier_4_10" && activeTier === "tier_1_3" ? (
+                <UpgradeToPremiumButton />
               ) : (
                 <>
                   <form action={createCheckoutSession}>
