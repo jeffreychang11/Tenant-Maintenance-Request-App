@@ -41,8 +41,8 @@ export async function updateSession(request: NextRequest) {
   // the actual JSON/image, breaking "Add to Home Screen" entirely.
   const isPwaMetadataRoute =
     path === "/manifest.webmanifest" ||
-    path === "/icon" ||
-    path === "/apple-icon" ||
+    path === "/icon.png" ||
+    path === "/apple-icon.png" ||
     path.startsWith("/pwa-icons/");
   const isPublicRoute =
     isAuthRoute ||
