@@ -1,29 +1,42 @@
 import "server-only";
 import { Resend } from "resend";
+import { buildInviteMessage } from "@/lib/inviteMessage";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-export async function sendInviteEmail(opts: {
+function escapeHtml(str: string): string {
+  return str.replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!
+  );
+}
+
+// The email itself is the landlord's own pre-filled message (buildInviteMessage,
+// shared with CopyInviteMessage's clipboard version so both channels read the
+// same) rather than a generic "you've been invited" notice.
+export async function sendInviteMessageEmail(opts: {
   to: string;
+  firstName: string;
   inviteUrl: string;
-  propertyName: string;
-  unitLabel: string;
-  landlordName: string;
 }) {
-  const { to, inviteUrl, propertyName, unitLabel, landlordName } = opts;
+  const { to, firstName, inviteUrl } = opts;
+  const message = buildInviteMessage(firstName, inviteUrl);
 
   if (!resend) {
-    console.warn(
-      `[email] RESEND_API_KEY not set — skipping invite email to ${to}. Invite URL: ${inviteUrl}`
-    );
+    console.warn(`[email] RESEND_API_KEY not set — skipping invite email to ${to}: ${message}`);
     return;
   }
+
+  const escapedMessage = escapeHtml(message).replace(
+    escapeHtml(inviteUrl),
+    `<a href="${inviteUrl}">${escapeHtml(inviteUrl)}</a>`
+  );
 
   const { error } = await resend.emails.send({
     from: process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
     to,
-    subject: `${landlordName} invited you to ${propertyName}`,
-    html: `<p>${landlordName} invited you to report maintenance issues for ${propertyName} ${unitLabel}.</p><p><a href="${inviteUrl}">Accept invite</a></p><p>This link expires in 7 days.</p>`,
+    subject: "A message from your landlord",
+    html: `<p>A message from your landlord:</p><p>"${escapedMessage}"</p>`,
   });
   // The Resend SDK resolves with { error } on API failures rather than
   // throwing, so callers checking only for a thrown exception would never

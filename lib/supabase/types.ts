@@ -593,6 +593,7 @@ export type Database = {
           id: string
           invited_by: string
           status: string
+          tenant_name: string | null
           token: string
           unit_id: string
         }
@@ -605,6 +606,7 @@ export type Database = {
           id?: string
           invited_by: string
           status?: string
+          tenant_name?: string | null
           token: string
           unit_id: string
         }
@@ -617,6 +619,7 @@ export type Database = {
           id?: string
           invited_by?: string
           status?: string
+          tenant_name?: string | null
           token?: string
           unit_id?: string
         }

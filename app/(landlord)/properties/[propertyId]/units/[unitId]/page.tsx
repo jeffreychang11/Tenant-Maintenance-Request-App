@@ -2,9 +2,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { createInvite, revokeInvite, removeTenant } from "@/app/(landlord)/properties/actions";
+import { removeTenant } from "@/app/(landlord)/properties/actions";
 import { TenantRow } from "@/components/properties/TenantRow";
-import { CopyInviteMessage } from "@/components/properties/CopyInviteMessage";
+import { InviteTenantForm } from "@/components/properties/InviteTenantForm";
 import { BackButton } from "@/components/layout/BackButton";
 
 export default async function UnitDetailPage({
@@ -40,15 +40,6 @@ export default async function UnitDetailPage({
     })
   );
   const contactByTenantUnitId = new Map(tenantContacts.map((c) => [c.tenantUnitId, c]));
-
-  const { data: invites } = await supabase
-    .from("tenant_invites")
-    .select("id, email, status, expires_at, created_at, token")
-    .eq("unit_id", unitId)
-    .order("created_at", { ascending: false });
-
-  const inviteForUnit = createInvite.bind(null, propertyId, unitId);
-  const revokeForUnit = revokeInvite.bind(null, propertyId, unitId);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -92,61 +83,7 @@ export default async function UnitDetailPage({
       )}
 
       <h2 className="mt-8 text-lg font-medium">Invite a tenant</h2>
-      <form action={inviteForUnit} className="mt-3 flex gap-2">
-        <input
-          name="email"
-          type="email"
-          required
-          placeholder="tenant@example.com"
-          className="flex-1 rounded-md border border-black/10 px-3 py-2 text-sm dark:border-white/20 dark:bg-black"
-        />
-        <button
-          type="submit"
-          className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-zinc-300"
-        >
-          Send invite
-        </button>
-      </form>
-
-      {invites && invites.length > 0 && (
-        <>
-          <h3 className="mt-6 text-sm font-medium text-zinc-600 dark:text-zinc-400">
-            Invite history
-          </h3>
-          <ul className="mt-2 flex flex-col gap-2">
-            {invites.map((inv) => (
-              <li
-                key={inv.id}
-                className="flex items-center justify-between rounded-xl border border-black/10 px-4 py-3 text-sm dark:border-white/10"
-              >
-                <div>
-                  <p>{inv.email}</p>
-                  <p className="text-xs text-zinc-500">
-                    {inv.status}
-                    {inv.status === "pending" &&
-                      ` · expires ${new Date(inv.expires_at).toLocaleDateString()}`}
-                  </p>
-                </div>
-                {inv.status === "pending" && (
-                  <div className="flex shrink-0 items-center gap-4">
-                    <CopyInviteMessage
-                      inviteUrl={`${process.env.NEXT_PUBLIC_APP_URL}/invite/${inv.token}`}
-                    />
-                    <form action={revokeForUnit.bind(null, inv.id)}>
-                      <button
-                        type="submit"
-                        className="text-xs text-red-600 hover:underline active:underline"
-                      >
-                        Revoke
-                      </button>
-                    </form>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
+      <InviteTenantForm propertyId={propertyId} unitId={unitId} />
     </div>
   );
 }

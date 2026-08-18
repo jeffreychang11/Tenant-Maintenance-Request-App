@@ -5,11 +5,12 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { sendInviteEmail } from "@/lib/email/resend";
+import { sendInviteMessageEmail } from "@/lib/email/resend";
 import { requireActiveSubscription } from "@/lib/billing/guard";
 import { syncPlanForUnitCount } from "@/lib/billing/syncPlan";
 import { checkUnitLimit, applyConfirmedUpgrade, type UnitLimitResult } from "@/lib/billing/unitLimit";
 import { inviteLimiter } from "@/lib/rateLimit";
+import { firstNameOf } from "@/lib/inviteMessage";
 
 // Read by UpgradeCelebrationModal in the landlord layout on the very next
 // render, then left to expire on its own (Server Components can't clear a
@@ -147,6 +148,10 @@ export async function createUnit(
   revalidatePath(`/properties/${propertyId}`);
 }
 
+// Creates the invite row only — does NOT send anything. The email is a
+// separate, explicit step (sendInviteMessage below) so the landlord can see
+// and confirm the pre-filled message before it goes out, rather than an
+// email firing the instant the form is submitted.
 export async function createInvite(propertyId: string, unitId: string, formData: FormData) {
   const supabase = await createClient();
   const {
@@ -155,11 +160,10 @@ export async function createInvite(propertyId: string, unitId: string, formData:
   if (!user) redirect("/login");
   await requireActiveSubscription(user.id);
 
-  const { success } = await inviteLimiter.limit(user.id);
-  if (!success) throw new Error("Too many invites sent recently — try again in a bit.");
-
   const email = (formData.get("email") as string)?.trim().toLowerCase();
+  const tenantName = (formData.get("name") as string)?.trim();
   if (!email) throw new Error("Email is required");
+  if (!tenantName) throw new Error("Tenant name is required");
 
   // Revoke any existing pending invite for this unit+email so the partial
   // unique index (unit_id, lower(email)) where status='pending' doesn't
@@ -173,43 +177,25 @@ export async function createInvite(propertyId: string, unitId: string, formData:
 
   const token = randomBytes(32).toString("base64url");
 
-  const { error } = await supabase.from("tenant_invites").insert({
-    unit_id: unitId,
-    invited_by: user.id,
-    email,
-    token,
-  });
+  const { data: invite, error } = await supabase
+    .from("tenant_invites")
+    .insert({ unit_id: unitId, invited_by: user.id, email, token, tenant_name: tenantName })
+    .select("id")
+    .single();
   if (error) throw new Error(error.message);
 
-  const [{ data: profile }, { data: unit }] = await Promise.all([
-    supabase.from("profiles").select("full_name").eq("id", user.id).single(),
-    supabase.from("units").select("label, properties(name)").eq("id", unitId).single(),
-  ]);
-
-  const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${token}`;
-  const propertyName =
-    (unit as unknown as { properties: { name: string } | null } | null)?.properties?.name ??
-    "your property";
-
-  try {
-    await sendInviteEmail({
-      to: email,
-      inviteUrl,
-      propertyName,
-      unitLabel: unit?.label ?? "",
-      landlordName: profile?.full_name || "Your landlord",
-    });
-  } catch (err) {
-    // The invite row is already saved and the link is valid — a failed
-    // send shouldn't fail the whole action. Log so it's visible, and the
-    // landlord can still copy/share the link manually if needed.
-    console.error(`[email] Failed to send invite email to ${email}:`, err);
-  }
-
   revalidatePath(`/properties/${propertyId}/units/${unitId}`);
+
+  return {
+    inviteId: invite.id,
+    inviteUrl: `${process.env.NEXT_PUBLIC_APP_URL}/invite/${token}`,
+    firstName: firstNameOf(tenantName),
+  };
 }
 
-export async function revokeInvite(propertyId: string, unitId: string, inviteId: string) {
+// The explicit "Send" step — landlord confirms the pre-filled message
+// before this fires a real email.
+export async function sendInviteMessage(propertyId: string, unitId: string, inviteId: string) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -217,11 +203,21 @@ export async function revokeInvite(propertyId: string, unitId: string, inviteId:
   if (!user) redirect("/login");
   await requireActiveSubscription(user.id);
 
-  const { error } = await supabase
+  const { success } = await inviteLimiter.limit(user.id);
+  if (!success) throw new Error("Too many invites sent recently — try again in a bit.");
+
+  const { data: invite, error } = await supabase
     .from("tenant_invites")
-    .update({ status: "revoked" })
-    .eq("id", inviteId);
-  if (error) throw new Error(error.message);
+    .select("email, token, tenant_name")
+    .eq("id", inviteId)
+    .single();
+  if (error || !invite) throw new Error("Invite not found");
+
+  await sendInviteMessageEmail({
+    to: invite.email,
+    firstName: firstNameOf(invite.tenant_name || "there"),
+    inviteUrl: `${process.env.NEXT_PUBLIC_APP_URL}/invite/${invite.token}`,
+  });
 
   revalidatePath(`/properties/${propertyId}/units/${unitId}`);
 }

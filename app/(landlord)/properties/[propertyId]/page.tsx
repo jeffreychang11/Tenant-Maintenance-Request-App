@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { createInvite } from "@/app/(landlord)/properties/actions";
+import { InviteTenantForm } from "@/components/properties/InviteTenantForm";
 import { BackButton } from "@/components/layout/BackButton";
 
 export default async function PropertyDetailPage({
@@ -53,7 +53,6 @@ export default async function PropertyDetailPage({
         <ul className="mt-3 flex flex-col gap-2">
           {units.map((u) => {
             const hasTenant = u.tenant_units.some((tu) => tu.status === "active");
-            const inviteForUnit = createInvite.bind(null, propertyId, u.id);
             return (
               <li key={u.id} className="rounded-xl border border-black/10 p-4 dark:border-white/10">
                 <div className="flex items-center justify-between gap-3">
@@ -65,23 +64,7 @@ export default async function PropertyDetailPage({
                     Manage →
                   </Link>
                 </div>
-                {!hasTenant && (
-                  <form action={inviteForUnit} className="mt-3 flex gap-2">
-                    <input
-                      name="email"
-                      type="email"
-                      required
-                      placeholder="tenant@example.com"
-                      className="flex-1 rounded-md border border-black/10 px-3 py-2 text-sm dark:border-white/20 dark:bg-black"
-                    />
-                    <button
-                      type="submit"
-                      className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-zinc-300"
-                    >
-                      Send invite
-                    </button>
-                  </form>
-                )}
+                {!hasTenant && <InviteTenantForm propertyId={propertyId} unitId={u.id} />}
               </li>
             );
           })}
