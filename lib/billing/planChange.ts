@@ -2,7 +2,6 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe/client";
 import { priceIdFor, UNIT_RANGES, type Tier, type BillingInterval } from "@/lib/stripe/plans";
-import { applyTierChange } from "@/lib/billing/syncPlan";
 import { countUnitsForLandlord } from "@/lib/billing/subscription";
 
 export type PlanChangePreview =
@@ -98,11 +97,16 @@ export async function applyYearlySwitch(landlordId: string, tier: Tier) {
     .eq("landlord_id", landlordId);
 }
 
-// Preview downgrading from Premium to Basic. Gated on the landlord's unit
-// count actually fitting Basic's range — unlike growing (where the app
-// picks the upgrade for you), shrinking tiers is the landlord's call, but
-// only once their own units are already within range.
-export async function previewDowngradeToBasic(landlordId: string): Promise<PlanChangePreview> {
+// Preview downgrading from Premium to Basic, in either billing interval
+// (mirrors previewUpgradeToPremium — the landlord picks the target
+// interval, not necessarily the one they're already on). Gated on the
+// landlord's unit count actually fitting Basic's range — unlike growing
+// (where the app picks the upgrade for you), shrinking tiers is the
+// landlord's call, but only once their own units are already within range.
+export async function previewDowngradeToBasic(
+  landlordId: string,
+  interval: BillingInterval
+): Promise<PlanChangePreview> {
   if (!stripe) return { status: "unavailable" };
   const admin = createAdminClient();
   const { data: sub } = await admin
@@ -120,7 +124,6 @@ export async function previewDowngradeToBasic(landlordId: string): Promise<PlanC
     };
   }
 
-  const interval = (sub.billing_interval ?? "month") as "month" | "year";
   const newPriceId = priceIdFor("tier_1_3", interval);
   if (!newPriceId) return { status: "unavailable" };
 
@@ -138,7 +141,7 @@ export async function previewDowngradeToBasic(landlordId: string): Promise<PlanC
 // already saw an "ok" preview) before actually swapping the subscription's
 // price down to Basic, same precedent as unitLimit.ts's confirmed-upgrade
 // flow trusting `confirmed` only as permission to re-derive, not a fact.
-export async function applyDowngradeToBasic(landlordId: string) {
+export async function applyDowngradeToBasic(landlordId: string, interval: BillingInterval) {
   const admin = createAdminClient();
   const unitCount = await countUnitsForLandlord(admin, landlordId);
   if (unitCount > UNIT_RANGES.tier_1_3.max) {
@@ -146,7 +149,37 @@ export async function applyDowngradeToBasic(landlordId: string) {
       `You have ${unitCount} units — get your unit count down to ${UNIT_RANGES.tier_1_3.max} or fewer to downgrade to Basic.`
     );
   }
-  await applyTierChange(landlordId, "tier_1_3", { prorationBehavior: "create_prorations" });
+  if (!stripe) return;
+
+  const { data: sub } = await admin
+    .from("subscriptions")
+    .select("*")
+    .eq("landlord_id", landlordId)
+    .single();
+  if (!sub?.stripe_subscription_id || sub.tier !== "tier_4_10") return;
+
+  const newPriceId = priceIdFor("tier_1_3", interval);
+  if (!newPriceId) return;
+
+  const stripeSub = await stripe.subscriptions.retrieve(sub.stripe_subscription_id);
+  const item = stripeSub.items.data[0];
+  if (!item) return;
+
+  const updated = await stripe.subscriptions.update(sub.stripe_subscription_id, {
+    items: [{ id: item.id, price: newPriceId }],
+    proration_behavior: "create_prorations",
+  });
+
+  await admin
+    .from("subscriptions")
+    .update({
+      tier: "tier_1_3",
+      billing_interval: interval,
+      stripe_price_id: newPriceId,
+      status: updated.status,
+      current_period_end: new Date(updated.items.data[0].current_period_end * 1000).toISOString(),
+    })
+    .eq("landlord_id", landlordId);
 }
 
 // Preview upgrading from Basic to Premium, in either billing interval — an
@@ -212,5 +245,52 @@ export async function applyUpgradeToPremium(landlordId: string, interval: Billin
       status: updated.status,
       current_period_end: new Date(updated.items.data[0].current_period_end * 1000).toISOString(),
     })
+    .eq("landlord_id", landlordId);
+}
+
+// Schedules cancellation for the end of the current billing period —
+// access stays fully unlocked until then, since computeAccessStatus only
+// looks at `status`, and Stripe doesn't flip that to "canceled" (nor fire
+// customer.subscription.deleted) until the period actually ends. Setting
+// cancel_at_period_end alone fires customer.subscription.updated instead,
+// which the webhook already handles.
+export async function scheduleCancellation(landlordId: string) {
+  if (!stripe) return;
+  const admin = createAdminClient();
+  const { data: sub } = await admin
+    .from("subscriptions")
+    .select("stripe_subscription_id")
+    .eq("landlord_id", landlordId)
+    .single();
+  if (!sub?.stripe_subscription_id) throw new Error("No active subscription to cancel.");
+
+  const updated = await stripe.subscriptions.update(sub.stripe_subscription_id, {
+    cancel_at_period_end: true,
+  });
+
+  await admin
+    .from("subscriptions")
+    .update({ cancel_at_period_end: updated.cancel_at_period_end })
+    .eq("landlord_id", landlordId);
+}
+
+// Undoes a scheduled cancellation before the period actually ends.
+export async function undoScheduledCancellation(landlordId: string) {
+  if (!stripe) return;
+  const admin = createAdminClient();
+  const { data: sub } = await admin
+    .from("subscriptions")
+    .select("stripe_subscription_id")
+    .eq("landlord_id", landlordId)
+    .single();
+  if (!sub?.stripe_subscription_id) throw new Error("No subscription to resume.");
+
+  const updated = await stripe.subscriptions.update(sub.stripe_subscription_id, {
+    cancel_at_period_end: false,
+  });
+
+  await admin
+    .from("subscriptions")
+    .update({ cancel_at_period_end: updated.cancel_at_period_end })
     .eq("landlord_id", landlordId);
 }

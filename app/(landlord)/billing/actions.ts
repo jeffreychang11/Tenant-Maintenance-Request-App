@@ -18,6 +18,8 @@ import {
   applyDowngradeToBasic,
   previewUpgradeToPremium,
   applyUpgradeToPremium,
+  scheduleCancellation,
+  undoScheduledCancellation,
   type PlanChangePreview,
 } from "@/lib/billing/planChange";
 import { createClient } from "@/lib/supabase/server";
@@ -100,14 +102,14 @@ export async function confirmSwitchToYearly(tier: Tier) {
   await applyYearlySwitch(user.id, tier);
 }
 
-export async function previewBasicDowngrade(): Promise<PlanChangePreview> {
+export async function previewBasicDowngrade(interval: BillingInterval): Promise<PlanChangePreview> {
   const { user } = await requireProfile();
-  return previewDowngradeToBasic(user.id);
+  return previewDowngradeToBasic(user.id, interval);
 }
 
-export async function confirmBasicDowngrade() {
+export async function confirmBasicDowngrade(interval: BillingInterval) {
   const { user } = await requireProfile();
-  await applyDowngradeToBasic(user.id);
+  await applyDowngradeToBasic(user.id, interval);
 }
 
 export async function previewPremiumUpgrade(interval: BillingInterval): Promise<PlanChangePreview> {
@@ -120,20 +122,12 @@ export async function confirmPremiumUpgrade(interval: BillingInterval) {
   await applyUpgradeToPremium(user.id, interval);
 }
 
-export async function createPortalSession() {
-  if (!stripe) throw new Error("Stripe isn't configured yet.");
-
+export async function cancelSubscription() {
   const { user } = await requireProfile();
-  const supabase = await createClient();
-  const sub = await getSubscriptionForLandlord(supabase, user.id);
+  await scheduleCancellation(user.id);
+}
 
-  if (!sub?.stripe_customer_id) redirect("/billing");
-
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const session = await stripe.billingPortal.sessions.create({
-    customer: sub.stripe_customer_id,
-    return_url: `${appUrl}/billing`,
-  });
-
-  redirect(session.url);
+export async function resumeSubscription() {
+  const { user } = await requireProfile();
+  await undoScheduledCancellation(user.id);
 }

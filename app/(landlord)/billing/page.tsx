@@ -17,12 +17,13 @@ import {
   planFeatures,
   type Tier,
 } from "@/lib/stripe/plans";
-import { createCheckoutSession, createPortalSession } from "@/app/(landlord)/billing/actions";
+import { createCheckoutSession } from "@/app/(landlord)/billing/actions";
 import { MessageUsageBar } from "@/components/billing/MessageUsageBar";
 import { MessageCapUpgradeButton } from "@/components/billing/MessageCapUpgradeButton";
 import { SwitchToYearlyButton } from "@/components/billing/SwitchToYearlyButton";
 import { DowngradeToBasicButton } from "@/components/billing/DowngradeToBasicButton";
 import { UpgradeToPremiumButton } from "@/components/billing/UpgradeToPremiumButton";
+import { CancelSubscriptionControl } from "@/components/billing/CancelSubscriptionControl";
 
 export default async function BillingPage({
   searchParams,
@@ -51,6 +52,9 @@ export default async function BillingPage({
         : null
       : null;
   const activeInterval: "month" | "year" = sub?.billing_interval === "year" ? "year" : "month";
+  const periodEndLabel = sub?.current_period_end
+    ? new Date(sub.current_period_end).toLocaleDateString()
+    : null;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -88,9 +92,7 @@ export default async function BillingPage({
         <p className="mt-4 rounded-xl border border-black/10 px-4 py-3 text-sm dark:border-white/10">
           You&apos;re on the {PLAN_LABELS[activeTier]} plan ({planPriceLabel(activeTier, activeInterval)}
           ), billed {activeInterval === "year" ? "yearly" : "monthly"}
-          {sub?.current_period_end &&
-            ` · next billing date ${new Date(sub.current_period_end).toLocaleDateString()}`}
-          .
+          {periodEndLabel && ` · next billing date ${periodEndLabel}`}.
         </p>
       )}
 
@@ -133,7 +135,7 @@ export default async function BillingPage({
                   <p className="text-center text-sm text-zinc-500">You&apos;re on this plan.</p>
                 )
               ) : tier === "tier_1_3" && activeTier === "tier_4_10" ? (
-                <DowngradeToBasicButton interval={activeInterval} />
+                <DowngradeToBasicButton />
               ) : tier === "tier_4_10" && activeTier === "tier_1_3" ? (
                 <UpgradeToPremiumButton />
               ) : (
@@ -174,14 +176,10 @@ export default async function BillingPage({
       </p>
 
       {hasStripeSubscription && (
-        <form action={createPortalSession} className="mt-6">
-          <button
-            type="submit"
-            className="rounded-full border border-black/10 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 active:bg-black/10 dark:border-white/20 dark:hover:bg-white/10 dark:active:bg-white/15"
-          >
-            Manage billing
-          </button>
-        </form>
+        <CancelSubscriptionControl
+          cancelAtPeriodEnd={!!sub?.cancel_at_period_end}
+          periodEndLabel={periodEndLabel}
+        />
       )}
     </div>
   );
