@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { createProperty } from "@/app/(landlord)/properties/actions";
 import { UnitUpgradeModal } from "@/components/billing/UnitUpgradeModal";
 
@@ -131,7 +132,14 @@ export function NewPropertyForm() {
           />
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p className="text-sm text-red-600">
+            {error}{" "}
+            <Link href="/support" className="underline">
+              Contact us for custom enterprise pricing.
+            </Link>
+          </p>
+        )}
 
         <button
           type="submit"

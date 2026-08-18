@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createUnit } from "@/app/(landlord)/properties/actions";
 import { UnitUpgradeModal } from "@/components/billing/UnitUpgradeModal";
 
@@ -66,7 +67,14 @@ export function AddUnitForm({ propertyId }: { propertyId: string }) {
         </button>
       </form>
 
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {error && (
+        <p className="mt-2 text-sm text-red-600">
+          {error}{" "}
+          <Link href="/support" className="underline">
+            Contact us for custom enterprise pricing.
+          </Link>
+        </p>
+      )}
 
       {upgrade && (
         <UnitUpgradeModal

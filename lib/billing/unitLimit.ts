@@ -49,7 +49,7 @@ export async function checkUnitLimit(
   if (!nextTier) {
     return {
       status: "blocked",
-      message: `You're at the ${range.max}-unit maximum for your plan. Contact us for custom enterprise pricing before adding more.`,
+      message: `You're at the ${range.max}-unit maximum for your plan.`,
     };
   }
 
@@ -57,7 +57,7 @@ export async function checkUnitLimit(
   if (newCount > nextRange.max) {
     return {
       status: "blocked",
-      message: `That would put you at ${newCount} units, above the ${nextRange.max}-unit maximum we offer. Contact us for custom enterprise pricing.`,
+      message: `That would put you at ${newCount} units, above the ${nextRange.max}-unit maximum we offer.`,
     };
   }
 
