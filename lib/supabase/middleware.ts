@@ -63,17 +63,5 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Marks this device as having had a signed-in session before, so /login
-  // can skip the first-time "I'm a landlord / I'm a tenant" chooser and go
-  // straight to a plain email+password form on later visits — set on every
-  // authenticated request (not just at sign-in) so it outlives a logout.
-  if (user) {
-    supabaseResponse.cookies.set("seen_auth", "1", {
-      maxAge: 60 * 60 * 24 * 365,
-      path: "/",
-      sameSite: "lax",
-    });
-  }
-
   return supabaseResponse;
 }
