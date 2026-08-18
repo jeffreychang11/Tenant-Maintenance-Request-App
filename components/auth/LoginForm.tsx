@@ -44,8 +44,10 @@ function LoginFormInner() {
       <header className="flex items-center px-6 py-3">
         <Logo href="/login" />
       </header>
-      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-6 py-10">
+      <div className="px-6 pt-4">
         <BackButton />
+      </div>
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-6 pb-10">
         <h1 className="text-2xl font-medium">Log in</h1>
 
         <form onSubmit={handlePasswordSignIn} className="mt-8 flex flex-col gap-4">
