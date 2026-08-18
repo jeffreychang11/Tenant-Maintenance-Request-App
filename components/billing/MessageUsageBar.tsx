@@ -14,10 +14,15 @@ function barColorClass(percent: number): string {
 
 const RUN_DURATION_MS = 1400;
 
-// Small stylized rooster, facing right (the direction the bar fills), in
-// brown — drawn as plain SVG shapes instead of the 🐓 emoji so the color
-// and facing direction are both under our control (emoji glyphs render
-// with fixed colors and orientation that vary by platform).
+// The same rooster silhouette as the nav logo (public/logo-icon.png),
+// redrawn as plain SVG shapes instead of referencing the PNG so it can be
+// recolored (navy, matching the logo's mark) and positioned/animated
+// freely — facing right, the direction the bar fills. Layered tail
+// feathers and the wing fold use lower opacity of the same navy rather
+// than a second hue, so it reads as distinctly "layered" while staying a
+// single-color mark like the logo itself.
+const ROOSTER_NAVY = "#0F2042";
+
 function RoosterIcon({
   className,
   style,
@@ -34,27 +39,27 @@ function RoosterIcon({
       style={style}
       aria-hidden="true"
     >
-      <line x1="18" y1="26" x2="16" y2="33" stroke="#78350f" strokeWidth="2" strokeLinecap="round" />
-      <line x1="16" y1="33" x2="13" y2="34.5" stroke="#78350f" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="16" y1="33" x2="18" y2="35" stroke="#78350f" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="25" y1="26" x2="27" y2="33" stroke="#78350f" strokeWidth="2" strokeLinecap="round" />
-      <line x1="27" y1="33" x2="24" y2="34.5" stroke="#78350f" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="27" y1="33" x2="29" y2="35" stroke="#78350f" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M16 16 C4 6, 0 -2, 9 1 C6 9, 12 15, 16 16 Z" fill="#4a2c17" />
-      <path d="M17 18 C6 12, 1 6, 7 5 C7 12, 13 19, 17 18 Z" fill="#6b4423" />
-      <path d="M18 20 C8 17, 4 12, 9 10 C9 16, 14 21, 18 20 Z" fill="#8b5a2b" />
-      <ellipse cx="20" cy="19" rx="11" ry="8" fill="#8b5a2b" />
-      <path d="M14 15 Q22 14 24 22 Q17 24 13 19 Q12 16 14 15 Z" fill="#6b4423" />
-      <ellipse cx="24" cy="23" rx="4" ry="3" fill="#c9a876" opacity="0.85" />
-      <circle cx="31" cy="10" r="5.5" fill="#8b5a2b" />
+      <line x1="18" y1="26" x2="16" y2="33" stroke={ROOSTER_NAVY} strokeWidth="2" strokeLinecap="round" />
+      <line x1="16" y1="33" x2="13" y2="34.5" stroke={ROOSTER_NAVY} strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="16" y1="33" x2="18" y2="35" stroke={ROOSTER_NAVY} strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="25" y1="26" x2="27" y2="33" stroke={ROOSTER_NAVY} strokeWidth="2" strokeLinecap="round" />
+      <line x1="27" y1="33" x2="24" y2="34.5" stroke={ROOSTER_NAVY} strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="27" y1="33" x2="29" y2="35" stroke={ROOSTER_NAVY} strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M16 16 C4 6, 0 -2, 9 1 C6 9, 12 15, 16 16 Z" fill={ROOSTER_NAVY} opacity="0.55" />
+      <path d="M17 18 C6 12, 1 6, 7 5 C7 12, 13 19, 17 18 Z" fill={ROOSTER_NAVY} opacity="0.75" />
+      <path d="M18 20 C8 17, 4 12, 9 10 C9 16, 14 21, 18 20 Z" fill={ROOSTER_NAVY} opacity="0.9" />
+      <ellipse cx="20" cy="19" rx="11" ry="8" fill={ROOSTER_NAVY} />
+      <path d="M14 15 Q22 14 24 22 Q17 24 13 19 Q12 16 14 15 Z" fill={ROOSTER_NAVY} opacity="0.75" />
+      <ellipse cx="24" cy="23" rx="4" ry="3" fill={ROOSTER_NAVY} opacity="0.4" />
+      <circle cx="31" cy="10" r="5.5" fill={ROOSTER_NAVY} />
       <path
         d="M27 4 Q27.5 1 28.5 3.5 Q29.5 0.5 30.5 3.5 Q31.5 0.5 32.5 3.5 Q33.5 1 34 4 Q33 6.5 30.5 6.5 Q28 6.5 27 4 Z"
-        fill="#dc2626"
+        fill={ROOSTER_NAVY}
       />
-      <path d="M33 13 Q35.5 14.5 33 18 Q30.5 15 33 13 Z" fill="#dc2626" />
-      <path d="M36 10 L42 11.5 L36 13.5 Z" fill="#f59e0b" />
-      <circle cx="32" cy="8.5" r="1.1" fill="#1c1917" />
-      <circle cx="32.3" cy="8.2" r="0.35" fill="#fff" />
+      <path d="M33 13 Q35.5 14.5 33 18 Q30.5 15 33 13 Z" fill={ROOSTER_NAVY} />
+      <path d="M36 10 L42 11.5 L36 13.5 Z" fill={ROOSTER_NAVY} />
+      <circle cx="32" cy="8.5" r="1.1" fill="#fff" />
+      <circle cx="32.3" cy="8.2" r="0.35" fill={ROOSTER_NAVY} />
     </svg>
   );
 }
