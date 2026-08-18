@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { BackButton } from "@/components/layout/BackButton";
 
 export function LoginForm() {
   return (
@@ -39,6 +40,7 @@ function LoginFormInner() {
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-sm flex-1 flex-col justify-center px-6 py-16">
+      <BackButton />
       <h1 className="text-2xl font-medium">Log in</h1>
 
       <form onSubmit={handlePasswordSignIn} className="mt-8 flex flex-col gap-4">
