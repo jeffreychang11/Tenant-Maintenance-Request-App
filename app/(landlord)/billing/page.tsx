@@ -80,36 +80,18 @@ export default async function BillingPage({
         <p className="mt-4 rounded-xl border border-black/10 px-4 py-3 text-sm dark:border-white/10">
           {access.daysLeftInTrial} day{access.daysLeftInTrial === 1 ? "" : "s"} left in your free
           trial.
-          {hasStripeSubscription &&
-            sub?.current_period_end &&
-            (() => {
-              const price = planPriceLabel(sub.tier, sub.billing_interval);
-              return price ? (
-                <>
-                  {" "}
-                  Then {price}, starting {new Date(sub.current_period_end).toLocaleDateString()}.
-                </>
-              ) : null;
-            })()}
         </p>
       )}
 
-      {!access.locked &&
-        sub?.status === "active" &&
-        (() => {
-          const price = planPriceLabel(sub.tier, sub.billing_interval);
-          if (!price) return null;
-          return (
-            <p className="mt-4 rounded-xl border border-black/10 px-4 py-3 text-sm dark:border-white/10">
-              You&apos;re on the {PLAN_LABELS[sub.tier as "tier_1_3" | "tier_4_10"]} plan (
-              {price}),
-              {sub.billing_interval === "year" ? " billed yearly" : " billed monthly"}
-              {sub.current_period_end &&
-                ` · next payment ${new Date(sub.current_period_end).toLocaleDateString()}`}
-              .
-            </p>
-          );
-        })()}
+      {!access.locked && activeTier && (
+        <p className="mt-4 rounded-xl border border-black/10 px-4 py-3 text-sm dark:border-white/10">
+          You&apos;re on the {PLAN_LABELS[activeTier]} plan ({planPriceLabel(activeTier, activeInterval)}
+          ), billed {activeInterval === "year" ? "yearly" : "monthly"}
+          {sub?.current_period_end &&
+            ` · next billing date ${new Date(sub.current_period_end).toLocaleDateString()}`}
+          .
+        </p>
+      )}
 
       <p className="mt-4 text-sm text-zinc-500">
         You currently have {unitCount} unit{unitCount === 1 ? "" : "s"} across your properties.
