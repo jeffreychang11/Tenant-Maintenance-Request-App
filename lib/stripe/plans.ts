@@ -71,6 +71,7 @@ export function planFeatures(tier: Tier): string[] {
     `${cap} messages a month, with the option to add more — room for higher tenant volume without losing structure or tenants spamming your dashboard`,
     ...shared,
     "Built for a growing portfolio, with room to scale past a handful of units",
+    "Priority support — jump the queue when you reach out with a question or issue",
   ];
 }
 
