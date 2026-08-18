@@ -40,7 +40,15 @@ export default async function BillingPage({
     getMessageUsage(supabase),
   ]);
   const access = computeAccessStatus(sub);
-  const hasStripeSubscription = !!sub?.stripe_subscription_id;
+  // True only while there's a real, still-running subscription (trialing or
+  // active) — sub.stripe_subscription_id and cancel_at_period_end both
+  // persist as stale values after the subscription actually ends (Stripe's
+  // customer.subscription.deleted webhook only flips status), so gating on
+  // stripe_subscription_id alone would keep showing "Resume subscription"
+  // forever after a cancellation has fully taken effect, and clicking it
+  // would error against an already-canceled Stripe subscription.
+  const hasOngoingSubscription =
+    !!sub?.stripe_subscription_id && !!sub.status && ["trialing", "active"].includes(sub.status);
   // The tier/interval a landlord is actually paying for right now — sub.tier
   // persists after cancellation, so this also checks status is still
   // trialing/active before treating it as "on this plan" for the card
@@ -175,7 +183,7 @@ export default async function BillingPage({
         </Link>
       </p>
 
-      {hasStripeSubscription && (
+      {hasOngoingSubscription && (
         <CancelSubscriptionControl
           cancelAtPeriodEnd={!!sub?.cancel_at_period_end}
           periodEndLabel={periodEndLabel}

@@ -74,7 +74,11 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
   const admin = createAdminClient();
   await admin
     .from("subscriptions")
-    .update({ status: "canceled" })
+    // cancel_at_period_end is meaningless once the subscription has
+    // actually ended — reset it so a stale `true` can't be mistaken for a
+    // still-cancelable subscription (see hasOngoingSubscription in
+    // app/(landlord)/billing/page.tsx, which also guards against this).
+    .update({ status: "canceled", cancel_at_period_end: false })
     .eq("stripe_subscription_id", sub.id);
 }
 
