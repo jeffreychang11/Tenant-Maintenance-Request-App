@@ -11,6 +11,13 @@ import {
   applyConfirmedMessageCapUpgrade,
   type MessageCapUpgradeResult,
 } from "@/lib/billing/messageLimit";
+import {
+  previewYearlySwitch,
+  applyYearlySwitch,
+  previewDowngradeToBasic,
+  applyDowngradeToBasic,
+  type PlanChangePreview,
+} from "@/lib/billing/planChange";
 import { createClient } from "@/lib/supabase/server";
 
 const MIN_TRIAL_END_LEAD_MS = 49 * 60 * 60 * 1000; // Stripe requires >= 48h out, or "now"
@@ -79,6 +86,26 @@ export async function previewMessageCapUpgrade(): Promise<MessageCapUpgradeResul
 export async function confirmMessageCapUpgrade() {
   const { user } = await requireProfile();
   await applyConfirmedMessageCapUpgrade(user.id);
+}
+
+export async function previewSwitchToYearly(tier: Tier): Promise<PlanChangePreview> {
+  const { user } = await requireProfile();
+  return previewYearlySwitch(user.id, tier);
+}
+
+export async function confirmSwitchToYearly(tier: Tier) {
+  const { user } = await requireProfile();
+  await applyYearlySwitch(user.id, tier);
+}
+
+export async function previewBasicDowngrade(): Promise<PlanChangePreview> {
+  const { user } = await requireProfile();
+  return previewDowngradeToBasic(user.id);
+}
+
+export async function confirmBasicDowngrade() {
+  const { user } = await requireProfile();
+  await applyDowngradeToBasic(user.id);
 }
 
 export async function createPortalSession() {

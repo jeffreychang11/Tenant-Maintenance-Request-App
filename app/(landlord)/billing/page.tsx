@@ -15,10 +15,13 @@ import {
   YEARLY_SAVINGS_PERCENT,
   planPriceLabel,
   planFeatures,
+  type Tier,
 } from "@/lib/stripe/plans";
 import { createCheckoutSession, createPortalSession } from "@/app/(landlord)/billing/actions";
 import { MessageUsageBar } from "@/components/billing/MessageUsageBar";
 import { MessageCapUpgradeButton } from "@/components/billing/MessageCapUpgradeButton";
+import { SwitchToYearlyButton } from "@/components/billing/SwitchToYearlyButton";
+import { DowngradeToBasicButton } from "@/components/billing/DowngradeToBasicButton";
 
 export default async function BillingPage({
   searchParams,
@@ -36,6 +39,17 @@ export default async function BillingPage({
   ]);
   const access = computeAccessStatus(sub);
   const hasStripeSubscription = !!sub?.stripe_subscription_id;
+  // The tier/interval a landlord is actually paying for right now — sub.tier
+  // persists after cancellation, so this also checks status is still
+  // trialing/active before treating it as "on this plan" for the card
+  // button logic below.
+  const activeTier: Tier | null =
+    sub?.tier === "tier_1_3" || sub?.tier === "tier_4_10"
+      ? sub.status && ["trialing", "active"].includes(sub.status)
+        ? sub.tier
+        : null
+      : null;
+  const activeInterval: "month" | "year" = sub?.billing_interval === "year" ? "year" : "month";
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -129,27 +143,39 @@ export default async function BillingPage({
               ))}
             </ul>
             <div className="mt-4 flex flex-col gap-2">
-              <form action={createCheckoutSession}>
-                <input type="hidden" name="tier" value={tier} />
-                <input type="hidden" name="interval" value="month" />
-                <button
-                  type="submit"
-                  className="w-full rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-zinc-300"
-                >
-                  Subscribe monthly
-                </button>
-              </form>
-              <form action={createCheckoutSession}>
-                <input type="hidden" name="tier" value={tier} />
-                <input type="hidden" name="interval" value="year" />
-                <button
-                  type="submit"
-                  className="w-full rounded-full border border-black/10 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 active:bg-black/10 dark:border-white/20 dark:hover:bg-white/10 dark:active:bg-white/15"
-                >
-                  Subscribe yearly {PLAN_PRICES[tier].year?.replace("/yr", "")} (Save{" "}
-                  {YEARLY_SAVINGS_PERCENT[tier]}%)
-                </button>
-              </form>
+              {activeTier === tier ? (
+                activeInterval === "month" ? (
+                  <SwitchToYearlyButton tier={tier} />
+                ) : (
+                  <p className="text-center text-sm text-zinc-500">You&apos;re on this plan.</p>
+                )
+              ) : tier === "tier_1_3" && activeTier === "tier_4_10" ? (
+                <DowngradeToBasicButton interval={activeInterval} />
+              ) : (
+                <>
+                  <form action={createCheckoutSession}>
+                    <input type="hidden" name="tier" value={tier} />
+                    <input type="hidden" name="interval" value="month" />
+                    <button
+                      type="submit"
+                      className="w-full rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-zinc-300"
+                    >
+                      Subscribe monthly
+                    </button>
+                  </form>
+                  <form action={createCheckoutSession}>
+                    <input type="hidden" name="tier" value={tier} />
+                    <input type="hidden" name="interval" value="year" />
+                    <button
+                      type="submit"
+                      className="w-full rounded-full border border-black/10 px-4 py-2 text-sm font-medium transition-colors hover:bg-black/5 active:bg-black/10 dark:border-white/20 dark:hover:bg-white/10 dark:active:bg-white/15"
+                    >
+                      Subscribe yearly {PLAN_PRICES[tier].year?.replace("/yr", "")} (Save{" "}
+                      {YEARLY_SAVINGS_PERCENT[tier]}%)
+                    </button>
+                  </form>
+                </>
+              )}
             </div>
           </div>
         ))}
