@@ -26,7 +26,11 @@ export function LandlordNavBar() {
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push("/login");
+    // `form=0` forces the logo/tagline splash instead of the plain login
+    // form the `seen_auth` cookie would otherwise select (that cookie is
+    // deliberately left set after logout — see middleware.ts — so this is
+    // the one spot that needs to override it).
+    router.push("/login?form=0");
     router.refresh();
   }
 
