@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { BackButton } from "@/components/layout/BackButton";
+import { Logo } from "@/components/layout/Logo";
 
 export default function SignupPage() {
   const [fullName, setFullName] = useState("");
@@ -35,94 +36,99 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-sm flex-1 flex-col justify-center px-6 py-16">
-      <BackButton />
-      <h1 className="text-2xl font-medium">Create a landlord account</h1>
+    <div className="flex min-h-full w-full flex-1 flex-col">
+      <header className="flex items-center px-6 py-3">
+        <Logo href="/login" />
+      </header>
+      <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center px-6 py-10">
+        <BackButton />
+        <h1 className="text-2xl font-medium">Create a landlord account</h1>
 
-      {status === "sent" ? (
+        {status === "sent" ? (
+          <p className="mt-8 text-sm text-zinc-600 dark:text-zinc-400">
+            Check {email} to confirm your account, then log in.
+          </p>
+        ) : (
+          <form onSubmit={handleSignup} className="mt-8 flex flex-col gap-4">
+            <div>
+              <label htmlFor="fullName" className="block text-sm text-zinc-600 dark:text-zinc-400">
+                Full name
+              </label>
+              <input
+                id="fullName"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="phone" className="block text-sm text-zinc-600 dark:text-zinc-400">
+                Phone number
+              </label>
+              <input
+                id="phone"
+                type="tel"
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm text-zinc-600 dark:text-zinc-400">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
+                placeholder="name@company.com"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm text-zinc-600 dark:text-zinc-400">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                required
+                minLength={8}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
+              />
+            </div>
+
+            {error && <p className="text-sm text-red-600">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={status === "loading"}
+              className="mt-2 rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-zinc-300"
+            >
+              Sign up
+            </button>
+          </form>
+        )}
+
         <p className="mt-8 text-sm text-zinc-600 dark:text-zinc-400">
-          Check {email} to confirm your account, then log in.
-        </p>
-      ) : (
-        <form onSubmit={handleSignup} className="mt-8 flex flex-col gap-4">
-          <div>
-            <label htmlFor="fullName" className="block text-sm text-zinc-600 dark:text-zinc-400">
-              Full name
-            </label>
-            <input
-              id="fullName"
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="phone" className="block text-sm text-zinc-600 dark:text-zinc-400">
-              Phone number
-            </label>
-            <input
-              id="phone"
-              type="tel"
-              required
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="email" className="block text-sm text-zinc-600 dark:text-zinc-400">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
-              placeholder="name@company.com"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="block text-sm text-zinc-600 dark:text-zinc-400">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
-            />
-          </div>
-
-          {error && <p className="text-sm text-red-600">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={status === "loading"}
-            className="mt-2 rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 active:bg-zinc-700 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-zinc-300"
+          Already have an account?{" "}
+          <Link
+            href="/login?form=1"
+            className="font-medium text-black hover:underline active:underline dark:text-white"
           >
-            Sign up
-          </button>
-        </form>
-      )}
-
-      <p className="mt-8 text-sm text-zinc-600 dark:text-zinc-400">
-        Already have an account?{" "}
-        <Link
-          href="/login?form=1"
-          className="font-medium text-black hover:underline active:underline dark:text-white"
-        >
-          Log in
-        </Link>
-      </p>
+            Log in
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }

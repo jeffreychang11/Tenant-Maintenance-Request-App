@@ -9,7 +9,7 @@ export function WelcomeChooser() {
         <span className="mr-0.5 font-serif italic">Simple</span>
         <span className="font-sans font-bold text-[#0F2042]">Roost</span>
       </span>
-      <p className="mt-1 text-xs tracking-wide text-zinc-500">Maintenance Made Easy</p>
+      <p className="mt-1 text-xs tracking-wide text-black">Maintenance Made Easy</p>
 
       <div className="mt-10 flex w-full max-w-xs flex-col gap-3">
         <Link
