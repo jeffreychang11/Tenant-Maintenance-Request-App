@@ -49,6 +49,8 @@ export default async function LandlordRequestDetailPage({
         otherUserId={result.otherUserId}
         initialMessages={result.messages}
         initialBlocked={usage.blocked}
+        initialInBufferZone={usage.inBufferZone}
+        tier={usage.tier}
         initialOtherLastReadAt={result.otherLastReadAt}
       />
       <LandlordStatusControls requestId={requestId} status={result.request.status} />

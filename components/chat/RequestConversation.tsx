@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { IconPlayerPlay, IconX } from "@tabler/icons-react";
 import { createClient } from "@/lib/supabase/client";
 import { triggerNotificationProcessing } from "@/lib/notifications/trigger";
 import { formatMessageDivider, shouldShowDivider } from "@/lib/formatMessageDivider";
+import { MessageCapUpgradeButton } from "@/components/billing/MessageCapUpgradeButton";
+import type { Tier } from "@/lib/stripe/plans";
 
 type MessageAttachment = { id: string; file_type: string; signedUrl: string | null };
 
@@ -18,15 +19,46 @@ type Message = {
   attachments: MessageAttachment[];
 };
 
-function BlockedNotice() {
+// A hard cap block isn't the end of the conversation — it's fixable in one
+// click, so this shows the actual remedy (upgrade for Basic, buy more for
+// Premium — MessageCapUpgradeButton already branches on tier) right where
+// the landlord hit the wall, instead of just an apologetic dead end. The
+// same notice also appears, non-blocking, once the landlord enters the
+// buffer zone (past base_cap, not yet at effective_cap) — a Basic landlord
+// gets a chance to upgrade before ever touching their emergency buffer,
+// not just after it's exhausted.
+function CapNotice({ blocked, tier }: { blocked: boolean; tier: Tier | null }) {
   return (
-    <p className="mt-3 text-sm text-red-700 dark:text-red-400">
-      You&apos;ve used all your messages for this month.{" "}
-      <Link href="/settings" className="underline">
-        Manage usage
-      </Link>{" "}
-      to keep replying.
-    </p>
+    <div
+      className={`mt-3 rounded-lg border p-3 ${
+        blocked
+          ? "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950"
+          : "border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950"
+      }`}
+    >
+      <p className={`text-sm ${blocked ? "text-red-700 dark:text-red-400" : "text-amber-700 dark:text-amber-400"}`}>
+        {blocked ? (
+          <>
+            You&apos;ve reached this month&apos;s messaging limit, so new messages — including
+            from your tenant — can&apos;t send until next month.{" "}
+          </>
+        ) : (
+          <>
+            You&apos;re past this month&apos;s message allowance and{" "}
+            {tier === "tier_1_3" ? "using your emergency buffer" : "using your purchased extra messages"} —
+            messages are still sending for now.{" "}
+          </>
+        )}
+        {tier === "tier_1_3"
+          ? blocked
+            ? "Upgrade to Premium to pick the conversation back up right away."
+            : "Upgrade to Premium to avoid running out."
+          : blocked
+            ? "Buy more messages to pick the conversation back up right away."
+            : "Buy more to stay ahead of the limit."}
+      </p>
+      {tier && <MessageCapUpgradeButton tier={tier} />}
+    </div>
   );
 }
 
@@ -36,6 +68,8 @@ export function RequestConversation({
   otherUserId,
   initialMessages,
   initialBlocked = false,
+  initialInBufferZone = false,
+  tier = null,
   initialOtherLastReadAt = null,
 }: {
   requestId: string;
@@ -43,6 +77,8 @@ export function RequestConversation({
   otherUserId: string;
   initialMessages: Message[];
   initialBlocked?: boolean;
+  initialInBufferZone?: boolean;
+  tier?: Tier | null;
   initialOtherLastReadAt?: string | null;
 }) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
@@ -50,12 +86,25 @@ export function RequestConversation({
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [blocked, setBlocked] = useState(initialBlocked);
+  const [inBufferZone, setInBufferZone] = useState(initialInBufferZone);
   const [lightbox, setLightbox] = useState<{ url: string; type: "image" | "video" } | null>(null);
   const [otherLastReadAt, setOtherLastReadAt] = useState<string | null>(initialOtherLastReadAt);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const firstMessage = messages[0];
   const hasReply = messages.length > 0 && messages.some((m) => m.sender_id !== firstMessage.sender_id);
+
+  // Lets an inline upgrade (via CapNotice's MessageCapUpgradeButton, which
+  // calls router.refresh() on success) clear the block/buffer-zone state
+  // immediately — useState's initial value alone wouldn't pick up the
+  // refreshed props.
+  useEffect(() => {
+    setBlocked(initialBlocked);
+  }, [initialBlocked]);
+
+  useEffect(() => {
+    setInBufferZone(initialInBufferZone);
+  }, [initialInBufferZone]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -181,9 +230,10 @@ export function RequestConversation({
 
   return (
     <div className="mt-6">
+      {!hasReply && !blocked && inBufferZone && <CapNotice blocked={false} tier={tier} />}
       {!hasReply &&
         (blocked ? (
-          <BlockedNotice />
+          <CapNotice blocked tier={tier} />
         ) : replying ? (
           <form onSubmit={handleSend} className="mt-3 flex gap-2">
             <input
@@ -254,8 +304,9 @@ export function RequestConversation({
             })}
             <div ref={bottomRef} />
           </div>
+          {!blocked && inBufferZone && <CapNotice blocked={false} tier={tier} />}
           {blocked ? (
-            <BlockedNotice />
+            <CapNotice blocked tier={tier} />
           ) : (
             <form onSubmit={handleSend} className="mt-3 flex gap-2">
               <input

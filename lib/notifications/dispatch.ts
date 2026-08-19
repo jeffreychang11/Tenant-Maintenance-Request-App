@@ -86,9 +86,52 @@ function isWithinDnd(profile: {
 }
 
 /**
+ * Whether the recipient already saw this update in the app, so notifying
+ * them is redundant. Backed by request_reads.last_read_at, which two
+ * independent things keep fresh: MarkAsRead upserts it to now() on every
+ * request-detail page load/reload (landlord and tenant both, unconditional
+ * of chat), and both chat components additionally re-upsert it live the
+ * instant a message arrives via Realtime while mounted. A last_read_at at
+ * or after this event's created_at means either signal already fired:
+ * - new_message: their chat thread was open when it landed (the live
+ *   signal — a plain page load wouldn't include a message that arrived
+ *   after the load).
+ * - status_changed: they've loaded/reloaded the request detail page at or
+ *   after the change — since that page always server-renders the current
+ *   status, a load after the change necessarily showed them the new one.
+ * request_created has no equivalent "already seen" signal (nothing to see
+ * before the request existed), so it's excluded.
+ * Best-effort by nature (there's an inherent race between the recipient's
+ * Realtime round-trip and this job running for the live new_message case)
+ * — a miss just means a notification still goes out, same as today, never
+ * a false suppression in the other direction.
+ */
+async function recipientAlreadySawEvent(
+  admin: ReturnType<typeof createAdminClient>,
+  event: { type: string; request_id: string | null; recipient_id: string; created_at: string }
+): Promise<boolean> {
+  if (
+    (event.type !== "new_message" && event.type !== "status_changed") ||
+    !event.request_id
+  ) {
+    return false;
+  }
+  const { data } = await admin
+    .from("request_reads")
+    .select("last_read_at")
+    .eq("request_id", event.request_id)
+    .eq("user_id", event.recipient_id)
+    .maybeSingle();
+  return !!data && new Date(data.last_read_at) >= new Date(event.created_at);
+}
+
+/**
  * Processes pending rows in the notification_events outbox: sends web push
- * (when the recipient has subscriptions) and always attempts email — email
- * is the guaranteed fallback and is never conditional on push succeeding.
+ * (when the recipient has subscriptions and isn't in their Do Not Disturb
+ * window), then falls back to email only if push wasn't actually delivered
+ * — email is the guaranteed fallback for someone who isn't reachable by
+ * push, not a duplicate of it. Both channels are skipped entirely if the
+ * recipient already saw it in the app (see recipientAlreadySawEvent).
  */
 export async function processPendingNotifications(limit = 20) {
   const admin = createAdminClient();
@@ -124,54 +167,63 @@ export async function processPendingNotifications(limit = 20) {
     let emailStatus = event.email_status;
     let pushStatus = event.push_status;
 
-    if (pushStatus === "pending" && recipient && isWithinDnd(recipient)) {
-      pushStatus = "skipped";
-    } else if (pushStatus === "pending") {
-      const { data: subs } = await admin
-        .from("push_subscriptions")
-        .select("id, endpoint, p256dh, auth")
-        .eq("user_id", event.recipient_id);
+    const alreadySeen = await recipientAlreadySawEvent(admin, event);
 
-      if (!subs || subs.length === 0) {
+    if (alreadySeen) {
+      if (pushStatus === "pending") pushStatus = "skipped";
+      if (emailStatus === "pending") emailStatus = "skipped";
+    } else {
+      if (pushStatus === "pending" && recipient && isWithinDnd(recipient)) {
         pushStatus = "skipped";
-      } else if (VAPID_PUBLIC && VAPID_PRIVATE) {
-        let anySent = false;
-        for (const sub of subs) {
-          try {
-            await webPush.sendNotification(
-              { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-              JSON.stringify({
-                title: PUSH_TITLES[event.type] ?? "Update",
-                body: pushBody(event, title),
-                url,
-              })
-            );
-            anySent = true;
-          } catch (err: unknown) {
-            const statusCode = (err as { statusCode?: number })?.statusCode;
-            if (statusCode === 404 || statusCode === 410) {
-              await admin.from("push_subscriptions").delete().eq("id", sub.id);
+      } else if (pushStatus === "pending") {
+        const { data: subs } = await admin
+          .from("push_subscriptions")
+          .select("id, endpoint, p256dh, auth")
+          .eq("user_id", event.recipient_id);
+
+        if (!subs || subs.length === 0) {
+          pushStatus = "skipped";
+        } else if (VAPID_PUBLIC && VAPID_PRIVATE) {
+          let anySent = false;
+          for (const sub of subs) {
+            try {
+              await webPush.sendNotification(
+                { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+                JSON.stringify({
+                  title: PUSH_TITLES[event.type] ?? "Update",
+                  body: pushBody(event, title),
+                  url,
+                })
+              );
+              anySent = true;
+            } catch (err: unknown) {
+              const statusCode = (err as { statusCode?: number })?.statusCode;
+              if (statusCode === 404 || statusCode === 410) {
+                await admin.from("push_subscriptions").delete().eq("id", sub.id);
+              }
             }
           }
-        }
-        pushStatus = anySent ? "sent" : "failed";
-      } else {
-        pushStatus = "skipped";
-      }
-    }
-
-    if (emailStatus === "pending") {
-      try {
-        const { data: authUser } = await admin.auth.admin.getUserById(event.recipient_id);
-        const recipientEmail = authUser?.user?.email;
-        if (recipientEmail) {
-          await sendNotificationEmail({ to: recipientEmail, type: event.type, title, url });
-          emailStatus = "sent";
+          pushStatus = anySent ? "sent" : "failed";
         } else {
-          emailStatus = "skipped";
+          pushStatus = "skipped";
         }
-      } catch {
-        emailStatus = "failed";
+      }
+
+      if (emailStatus === "pending" && pushStatus === "sent") {
+        emailStatus = "skipped";
+      } else if (emailStatus === "pending") {
+        try {
+          const { data: authUser } = await admin.auth.admin.getUserById(event.recipient_id);
+          const recipientEmail = authUser?.user?.email;
+          if (recipientEmail) {
+            await sendNotificationEmail({ to: recipientEmail, type: event.type, title, url });
+            emailStatus = "sent";
+          } else {
+            emailStatus = "skipped";
+          }
+        } catch {
+          emailStatus = "failed";
+        }
       }
     }
 

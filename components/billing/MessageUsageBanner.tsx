@@ -9,9 +9,13 @@ export function MessageUsageBanner({ usage }: { usage: MessageUsage }) {
   if (usage.blocked) {
     return (
       <div className="flex items-center justify-between gap-3 bg-red-50 px-6 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-400">
-        <span>You&apos;ve used all your messages for this month. New messages won&apos;t send.</span>
-        <Link href="/settings" className="shrink-0 font-medium underline">
-          Manage usage
+        <span>
+          You&apos;ve reached this month&apos;s messaging limit, so new messages won&apos;t send.{" "}
+          {usage.tier === "tier_1_3" ? "Upgrade to Premium" : "Buy more messages"} to keep
+          chatting with tenants.
+        </span>
+        <Link href="/billing" className="shrink-0 font-medium underline">
+          Fix this
         </Link>
       </div>
     );
@@ -25,7 +29,7 @@ export function MessageUsageBanner({ usage }: { usage: MessageUsage }) {
             ? "You're past your plan's message allowance and using your emergency buffer."
             : "You're past your plan's message allowance and using your purchased extra messages."}
         </span>
-        <Link href="/settings" className="shrink-0 font-medium underline">
+        <Link href="/billing" className="shrink-0 font-medium underline">
           Manage usage
         </Link>
       </div>

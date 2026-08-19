@@ -21,7 +21,7 @@ export type MessageUsage = {
   blocked: boolean;
 };
 
-// Read-only usage snapshot for a landlord — used by the settings-page bar,
+// Read-only usage snapshot for a landlord — used by the billing-page bar,
 // the layout-level banner/popup, and the pre-disable check on the request
 // detail page. Backed by the get_message_usage() RPC so the displayed
 // numbers can never drift from what the request_messages trigger actually

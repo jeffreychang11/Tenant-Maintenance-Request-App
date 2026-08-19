@@ -38,6 +38,9 @@ export default async function SettingsPage() {
               <dd className="mt-1 text-base font-medium text-black dark:text-white">
                 {profile.phone || "—"}
               </dd>
+              {role === "landlord" && (
+                <p className="mt-1 text-xs text-zinc-500">Private — your tenants will never see this number.</p>
+              )}
             </div>
           </dl>
 

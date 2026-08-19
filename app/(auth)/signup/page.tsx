@@ -77,6 +77,9 @@ export default function SignupPage() {
                 onChange={(e) => setPhone(e.target.value)}
                 className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 dark:border-white/20 dark:bg-black"
               />
+              <p className="mt-1 text-xs text-zinc-500">
+                Private — your tenants will never see this number.
+              </p>
             </div>
 
             <div>
