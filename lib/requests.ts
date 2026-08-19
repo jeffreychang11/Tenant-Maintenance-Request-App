@@ -1,16 +1,22 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/supabase/types";
 
-export async function loadRequestDetail(supabase: SupabaseClient<Database>, requestId: string) {
+export async function loadRequestDetail(
+  supabase: SupabaseClient<Database>,
+  requestId: string,
+  currentUserId: string
+) {
   const { data: request } = await supabase
     .from("maintenance_requests")
-    .select("id, title, description, category, status, created_at, unit_id")
+    .select("id, title, description, category, status, created_at, unit_id, tenant_id, landlord_id")
     .eq("id", requestId)
     .single();
 
   if (!request) return null;
 
-  const [{ data: attachments }, { data: messages }] = await Promise.all([
+  const otherUserId = currentUserId === request.tenant_id ? request.landlord_id : request.tenant_id;
+
+  const [{ data: attachments }, { data: messages }, { data: otherRead }] = await Promise.all([
     supabase
       .from("request_attachments")
       .select("id, storage_path, file_type, message_id")
@@ -20,6 +26,12 @@ export async function loadRequestDetail(supabase: SupabaseClient<Database>, requ
       .select("id, sender_id, body, created_at, profiles(full_name)")
       .eq("request_id", requestId)
       .order("created_at", { ascending: true }),
+    supabase
+      .from("request_reads")
+      .select("last_read_at")
+      .eq("request_id", requestId)
+      .eq("user_id", otherUserId)
+      .maybeSingle(),
   ]);
 
   let signedAttachments: {
@@ -58,5 +70,7 @@ export async function loadRequestDetail(supabase: SupabaseClient<Database>, requ
     request,
     attachments: signedAttachments,
     messages: chatMessages,
+    otherUserId,
+    otherLastReadAt: otherRead?.last_read_at ?? null,
   };
 }

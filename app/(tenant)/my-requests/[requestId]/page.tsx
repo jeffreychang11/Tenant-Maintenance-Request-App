@@ -17,7 +17,7 @@ export default async function TenantRequestDetailPage({
   const { requestId } = await params;
   const supabase = await createClient();
 
-  const result = await loadRequestDetail(supabase, requestId);
+  const result = await loadRequestDetail(supabase, requestId, user.id);
   if (!result) notFound();
 
   return (
@@ -35,7 +35,9 @@ export default async function TenantRequestDetailPage({
       <MessageThread
         requestId={requestId}
         currentUserId={user.id}
+        otherUserId={result.otherUserId}
         initialMessages={result.messages}
+        initialOtherLastReadAt={result.otherLastReadAt}
       />
       <TenantStatusControls requestId={requestId} status={result.request.status} />
     </div>

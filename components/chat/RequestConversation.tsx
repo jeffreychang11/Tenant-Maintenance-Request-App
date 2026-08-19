@@ -33,13 +33,17 @@ function BlockedNotice() {
 export function RequestConversation({
   requestId,
   currentUserId,
+  otherUserId,
   initialMessages,
   initialBlocked = false,
+  initialOtherLastReadAt = null,
 }: {
   requestId: string;
   currentUserId: string;
+  otherUserId: string;
   initialMessages: Message[];
   initialBlocked?: boolean;
+  initialOtherLastReadAt?: string | null;
 }) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [replying, setReplying] = useState(false);
@@ -47,6 +51,7 @@ export function RequestConversation({
   const [sending, setSending] = useState(false);
   const [blocked, setBlocked] = useState(initialBlocked);
   const [lightbox, setLightbox] = useState<{ url: string; type: "image" | "video" } | null>(null);
+  const [otherLastReadAt, setOtherLastReadAt] = useState<string | null>(initialOtherLastReadAt);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const firstMessage = messages[0];
@@ -76,6 +81,31 @@ export function RequestConversation({
               ? prev
               : [...prev, { ...row, senderName: null, attachments: [] }]
           );
+          // The thread is open, so whatever just arrived (including our own
+          // just-sent message) counts as read right now — keeps the other
+          // party's "Read" receipt live without waiting on a reload.
+          supabase
+            .from("request_reads")
+            .upsert(
+              { request_id: requestId, user_id: currentUserId, last_read_at: new Date().toISOString() },
+              { onConflict: "request_id,user_id" }
+            )
+            .then();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "request_reads",
+          filter: `request_id=eq.${requestId}`,
+        },
+        (payload) => {
+          const row = (payload.new ?? payload.old) as { user_id: string; last_read_at?: string };
+          if (row.user_id === otherUserId && row.last_read_at) {
+            setOtherLastReadAt(row.last_read_at);
+          }
         }
       )
       .subscribe();
@@ -83,7 +113,7 @@ export function RequestConversation({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [requestId]);
+  }, [requestId, currentUserId, otherUserId]);
 
   useEffect(() => {
     if (hasReply) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -145,6 +175,9 @@ export function RequestConversation({
   }
 
   const replyMessages = messages.slice(1);
+  const lastMineId = [...replyMessages].reverse().find((m) => m.sender_id === currentUserId)?.id;
+  const isReadByOther = (createdAt: string) =>
+    !!otherLastReadAt && new Date(otherLastReadAt) >= new Date(createdAt);
 
   return (
     <div className="mt-6">
@@ -211,6 +244,9 @@ export function RequestConversation({
                       <div className="mt-2 w-full max-w-[80%]">
                         <AttachmentGrid attachments={m.attachments} />
                       </div>
+                    )}
+                    {isMe && m.id === lastMineId && isReadByOther(m.created_at) && (
+                      <span className="mt-0.5 text-[10px] text-zinc-400">Read</span>
                     )}
                   </div>
                 </div>

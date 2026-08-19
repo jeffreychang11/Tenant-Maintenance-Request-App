@@ -243,6 +243,10 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          dnd_enabled: boolean
+          dnd_end_time: string | null
+          dnd_start_time: string | null
+          dnd_timezone: string | null
           full_name: string | null
           id: string
           phone: string | null
@@ -251,6 +255,10 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          dnd_enabled?: boolean
+          dnd_end_time?: string | null
+          dnd_start_time?: string | null
+          dnd_timezone?: string | null
           full_name?: string | null
           id: string
           phone?: string | null
@@ -259,6 +267,10 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          dnd_enabled?: boolean
+          dnd_end_time?: string | null
+          dnd_start_time?: string | null
+          dnd_timezone?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null

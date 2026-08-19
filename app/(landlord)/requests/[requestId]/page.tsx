@@ -20,7 +20,7 @@ export default async function LandlordRequestDetailPage({
   const supabase = await createClient();
 
   const [result, usage] = await Promise.all([
-    loadRequestDetail(supabase, requestId),
+    loadRequestDetail(supabase, requestId, user.id),
     getMessageUsage(supabase),
   ]);
   if (!result) notFound();
@@ -46,8 +46,10 @@ export default async function LandlordRequestDetailPage({
       <RequestConversation
         requestId={requestId}
         currentUserId={user.id}
+        otherUserId={result.otherUserId}
         initialMessages={result.messages}
         initialBlocked={usage.blocked}
+        initialOtherLastReadAt={result.otherLastReadAt}
       />
       <LandlordStatusControls requestId={requestId} status={result.request.status} />
     </div>

@@ -15,16 +15,21 @@ type Message = {
 export function MessageThread({
   requestId,
   currentUserId,
+  otherUserId,
   initialMessages,
+  initialOtherLastReadAt = null,
 }: {
   requestId: string;
   currentUserId: string;
+  otherUserId: string;
   initialMessages: Message[];
+  initialOtherLastReadAt?: string | null;
 }) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [blocked, setBlocked] = useState(false);
+  const [otherLastReadAt, setOtherLastReadAt] = useState<string | null>(initialOtherLastReadAt);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Subscribes regardless of whether a reply exists yet, so the chatbox can
@@ -52,6 +57,31 @@ export function MessageThread({
           setMessages((prev) =>
             prev.some((m) => m.id === row.id) ? prev : [...prev, { ...row, senderName: null }]
           );
+          // The thread is open, so whatever just arrived (including our own
+          // just-sent message) counts as read right now — keeps the other
+          // party's "Read" receipt live without waiting on a reload.
+          supabase
+            .from("request_reads")
+            .upsert(
+              { request_id: requestId, user_id: currentUserId, last_read_at: new Date().toISOString() },
+              { onConflict: "request_id,user_id" }
+            )
+            .then();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "request_reads",
+          filter: `request_id=eq.${requestId}`,
+        },
+        (payload) => {
+          const row = (payload.new ?? payload.old) as { user_id: string; last_read_at?: string };
+          if (row.user_id === otherUserId && row.last_read_at) {
+            setOtherLastReadAt(row.last_read_at);
+          }
         }
       )
       .subscribe();
@@ -59,12 +89,15 @@ export function MessageThread({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [requestId]);
+  }, [requestId, currentUserId, otherUserId]);
 
   const firstMessage = messages[0];
   const hasReply =
     messages.length > 1 && messages.some((m) => m.sender_id !== firstMessage?.sender_id);
   const replyMessages = messages.slice(1);
+  const lastMineId = [...replyMessages].reverse().find((m) => m.sender_id === currentUserId)?.id;
+  const isReadByOther = (createdAt: string) =>
+    !!otherLastReadAt && new Date(otherLastReadAt) >= new Date(createdAt);
 
   useEffect(() => {
     if (hasReply) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -114,6 +147,9 @@ export function MessageThread({
               >
                 {m.body}
               </div>
+              {isMe && m.id === lastMineId && isReadByOther(m.created_at) && (
+                <span className="mt-0.5 text-[10px] text-zinc-400">Read</span>
+              )}
             </div>
           );
         })}

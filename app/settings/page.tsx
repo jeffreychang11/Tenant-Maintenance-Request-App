@@ -4,6 +4,7 @@ import { getPrimaryLandlordContact } from "@/lib/landlord";
 import { LandlordNavBar } from "@/components/layout/LandlordNavBar";
 import { TenantNavBar } from "@/components/layout/TenantNavBar";
 import { PushToggle } from "@/components/settings/PushToggle";
+import { DndSettings } from "@/components/settings/DndSettings";
 
 export default async function SettingsPage() {
   const { user, profile } = await requireProfile();
@@ -48,6 +49,13 @@ export default async function SettingsPage() {
             Get a browser notification when there&apos;s activity on your requests. You&apos;ll
             always get an email too, even without this enabled.
           </p>
+          {role === "landlord" && (
+            <DndSettings
+              initialEnabled={profile.dnd_enabled}
+              initialStartTime={profile.dnd_start_time}
+              initialEndTime={profile.dnd_end_time}
+            />
+          )}
         </div>
       </main>
     </div>
