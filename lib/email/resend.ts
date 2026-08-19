@@ -36,11 +36,20 @@ export async function sendInviteMessageEmail(opts: {
     `<a href="${inviteUrl}">${escapeHtml(inviteUrl)}</a>`
   );
 
+  // Hosted (not inline base64) since some clients, notably Outlook, don't
+  // reliably render data-URI images — a normal absolute <img src> is the
+  // safe default for email. Shown below the landlord's message so a
+  // tenant who bookmarks the link also knows how to add it to their home
+  // screen, which iOS specifically requires before push notifications
+  // will work at all (a plain Safari tab can't receive them).
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const homeScreenImageUrl = `${appUrl}/email/add-to-home-screen.png`;
+
   const { error } = await resend.emails.send({
     from: process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev",
     to,
     subject: "A message from your landlord",
-    html: `<p>A message from your landlord:</p><p>"${escapedMessage}"</p>`,
+    html: `<p>A message from your landlord:</p><p>"${escapedMessage}"</p><p>Once you're in, add SimpleRoost to your home screen so you never miss an update:</p><img src="${homeScreenImageUrl}" alt="How to add SimpleRoost to your home screen: on iPhone, tap Share then Add to Home Screen; on Android, tap the menu then Install app" width="600" style="max-width:100%;height:auto" />`,
     ...(replyTo ? { replyTo } : {}),
   });
   // The Resend SDK resolves with { error } on API failures rather than
