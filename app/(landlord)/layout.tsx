@@ -9,6 +9,7 @@ import { TrialBanner } from "@/components/billing/TrialBanner";
 import { UpgradeCelebrationModal } from "@/components/billing/UpgradeCelebrationModal";
 import { MessageUsageBanner } from "@/components/billing/MessageUsageBanner";
 import { MessageCapWarningPopup } from "@/components/billing/MessageCapWarningPopup";
+import { WelcomeTutorial } from "@/components/onboarding/WelcomeTutorial";
 
 export default async function LandlordLayout({ children }: { children: React.ReactNode }) {
   const { profile } = await requireProfile();
@@ -39,6 +40,7 @@ export default async function LandlordLayout({ children }: { children: React.Rea
       <MessageUsageBanner usage={usage} />
       <UpgradeCelebrationModal show={showCelebration} />
       <MessageCapWarningPopup show={approachingLimit} periodMonth={usage.periodMonth} />
+      <WelcomeTutorial show={!profile.onboarding_tutorial_seen_at} />
       <main className="flex-1 px-6 py-8">{children}</main>
     </div>
   );

@@ -249,6 +249,7 @@ export type Database = {
           dnd_timezone: string | null
           full_name: string | null
           id: string
+          onboarding_tutorial_seen_at: string | null
           phone: string | null
           role: string
           updated_at: string
@@ -261,6 +262,7 @@ export type Database = {
           dnd_timezone?: string | null
           full_name?: string | null
           id: string
+          onboarding_tutorial_seen_at?: string | null
           phone?: string | null
           role: string
           updated_at?: string
@@ -273,6 +275,7 @@ export type Database = {
           dnd_timezone?: string | null
           full_name?: string | null
           id?: string
+          onboarding_tutorial_seen_at?: string | null
           phone?: string | null
           role?: string
           updated_at?: string
